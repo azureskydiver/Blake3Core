@@ -24,7 +24,7 @@ namespace Blake3Core
 
         public void MoveToNextChunk()
         {
-            _chunkCount++;
+            ChunkCount++;
             _flags = _defaultFlag | Flag.ChunkStart;
             Length = 0;
         }

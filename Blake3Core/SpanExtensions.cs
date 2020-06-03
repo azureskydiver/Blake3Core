@@ -11,7 +11,7 @@ namespace Blake3Core
             => MemoryMarshal.AsBytes<T>(span);
 
         public static Span<byte> AsBytes<T>(this Span<T> span) where T : struct
-            => MemoryMarshal.AsBytest<T>(span);
+            => MemoryMarshal.AsBytes<T>(span);
 
         public static ReadOnlySpan<uint> AsUints<T>(this T[] span) where T : struct
             => MemoryMarshal.Cast<T, uint>(span);
