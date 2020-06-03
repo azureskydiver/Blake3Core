@@ -9,13 +9,12 @@ namespace Blake3Core
     {
         ChainingValue _cv = new ChainingValue();
         byte[] _block = new byte[Blake3.BlockLength];
-        ulong _chunkCount = 0;
         Flag _defaultFlag = Flag.None;
         Flag _flags = Flag.None;
         int _blockCount = 0;
 
-        public bool IsComplete => Length == 0;
         public int Length { get; private set; } = 0;
+        public ulong ChunkCount { get; private set; } = 0;
 
         public ChunkState(Flag defaultFlag)
         {
@@ -30,16 +29,22 @@ namespace Blake3Core
             Length = 0;
         }
 
+        public void ZeroFillRestOfChunk()
+        {
+            var zeroesNeeded = Blake3.ChunkLength - Length;
+            Debug.Assert(zeroesNeeded >= 0);
+            if (zeroesNeeded > 0)
+            {
+                var buffer = new byte[zeroesNeeded];
+                Update(buffer);
+            }
+        }
+
         public void Update(ReadOnlyMemory<byte> data)
         {
             Debug.Assert(data.Length <= Blake3.ChunkLength);
 
             //$ TODO: Cut chunk into blocks and process the blocks
-        }
-
-        public void EndChunk()
-        {
-            //$ TODO: end a chunk
         }
 
         public ref ChainingValue ComputeChainingValue()

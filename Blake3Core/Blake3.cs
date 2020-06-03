@@ -50,7 +50,7 @@ namespace Blake3Core
         void MoveToNextChunk()
         {
             var cv = _chunkState.ComputeChainingValue();
-            _chainingValueStack.Push(ref cv);
+            _chainingValueStack.Push(ref cv, _chunkState.ChunkCount);
             _chunkState.MoveToNextChunk();
         }
 
@@ -58,12 +58,12 @@ namespace Blake3Core
         {
             var data = new ReadOnlyMemory<byte>(array, ibStart, cbSize);
 
-            if (!_chunkState.IsComplete)
+            var needed = ChunkLength - _chunkState.Length;
+            if (0 < needed && needed <= data.Length)
             {
-                var needToFill = Math.Min(ChunkLength - _chunkState.Length, data.Length);
-                _chunkState.Update(data.Slice(0, needToFill));
+                _chunkState.Update(data.Slice(0, needed));
                 MoveToNextChunk();
-                data = data.Slice(needToFill);
+                data = data.Slice(needed);
             }
 
             while (data.Length >= ChunkLength)
@@ -79,9 +79,9 @@ namespace Blake3Core
 
         protected override byte[] HashFinal()
         {
-            _chunkState.EndChunk();
+            _chunkState.ZeroFillRestOfChunk();
             var cv = _chunkState.ComputeChainingValue();
-            _chainingValueStack.Push(ref cv);
+            _chainingValueStack.Push(ref cv, _chunkState.ChunkCount);
 
             //$ TODO: Merge chaining value stage and get final hash value
             return null;
