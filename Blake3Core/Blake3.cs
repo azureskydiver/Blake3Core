@@ -5,23 +5,11 @@ using System.Security.Cryptography;
 
 namespace Blake3Core
 {
-    [Flags]
-    enum Flag
-    {
-        ChunkStart = 1 << 0,
-        ChunkEnd = 1 << 1,
-        Parent = 1 << 2,
-        Root = 1 << 3,
-        KeyedHash = 1 << 4,
-        DeriveKeyContext = 1 << 5,
-        DeriveKeyMaterial = 1 << 6,
-        None
-    }
-
-    public partial class Blake3 : HashAlgorithm
+    public class Blake3 : HashAlgorithm
     {
         const int HashSizeInBits = 8 * sizeof(uint);
 
+        internal const int ChunkLength = 1024;
         internal const int BlockLength = 16 * sizeof(uint);
 
         protected static readonly uint [] IV =
@@ -30,8 +18,8 @@ namespace Blake3Core
         protected private Flag DefaultFlag;
         protected uint[] Key;
 
-        ChunkState _chunkState = new ChunkState();
-        ChainingValueStack _chainingValueStack = new ChainingValueStack();
+        ChunkState _chunkState;
+        ChainingValueStack _chainingValueStack;
 
         protected private Blake3(Flag defaultFlag, ReadOnlySpan<uint> key)
         {
@@ -55,17 +43,48 @@ namespace Blake3Core
 
         public override void Initialize()
         {
-            throw new NotImplementedException();
+            _chunkState = new ChunkState(DefaultFlag);
+            _chainingValueStack = new ChainingValueStack();
+        }
+
+        void MoveToNextChunk()
+        {
+            var cv = _chunkState.ComputeChainingValue();
+            _chainingValueStack.Push(ref cv);
+            _chunkState.MoveToNextChunk();
         }
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {
-            throw new NotImplementedException();
+            var data = new ReadOnlyMemory<byte>(array, ibStart, cbSize);
+
+            if (!_chunkState.IsComplete)
+            {
+                var needToFill = Math.Min(ChunkLength - _chunkState.Length, data.Length);
+                _chunkState.Update(data.Slice(0, needToFill));
+                MoveToNextChunk();
+                data = data.Slice(needToFill);
+            }
+
+            while (data.Length >= ChunkLength)
+            {
+                _chunkState.Update(data.Slice(0, ChunkLength));
+                MoveToNextChunk();
+                data = data.Slice(ChunkLength);
+            }
+
+            if (data.Length > 0)
+                _chunkState.Update(data.Slice(0, data.Length));
         }
 
         protected override byte[] HashFinal()
         {
-            throw new NotImplementedException();
+            _chunkState.EndChunk();
+            var cv = _chunkState.ComputeChainingValue();
+            _chainingValueStack.Push(ref cv);
+
+            //$ TODO: Merge chaining value stage and get final hash value
+            return null;
         }
     }
 }

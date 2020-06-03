@@ -16,7 +16,7 @@ namespace Blake3Core
         int _depth = 0;
         ChainingValue[] _stack = new ChainingValue[MaxDepth + 1];
 
-        public void PushChainingValue(ref ChainingValue cv)
+        public void Push(ref ChainingValue cv)
         {
             _stack[_depth++] = cv;
         }
