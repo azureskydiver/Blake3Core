@@ -44,7 +44,7 @@ namespace Blake3Core
         public override void Initialize()
         {
             _chunkState = new ChunkState(DefaultFlag);
-            _chainingValueStack = new ChainingValueStack();
+            _chainingValueStack = new ChainingValueStack(DefaultFlag, Key);
         }
 
         void MoveToNextChunk()
