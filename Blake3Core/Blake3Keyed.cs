@@ -7,16 +7,14 @@ namespace Blake3Core
 {
     public class Blake3Keyed : Blake3
     {
-        public Blake3Keyed(byte [] key)
-            : this(key, Flag.KeyedHash)
+        public Blake3Keyed(byte[] key)
+            : base(Flag.KeyedHash, key)
         {
         }
 
-        protected Blake3Keyed(byte [] key, Flag defaultFlag)
-            : base(defaultFlag)
+        public Blake3Keyed(uint[] key)
+            : base(Flag.KeyedHash, key)
         {
-            Key = new uint[8];
-            MemoryMarshal.Cast<byte, uint>(key).Slice(0, 8).CopyTo(Key);
         }
     }
 }

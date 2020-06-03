@@ -7,58 +7,26 @@ namespace Blake3Core
 {
     public class Blake3DerivedKey : Blake3
     {
-        byte[] _context;
-        byte[] _key;
-
-        class Blake3DeriveKeyFirstStage : Blake3
-        {
-            public Blake3DeriveKeyFirstStage()
-                : base(Flag.DeriveKeyContext)
-            {
-                Key = IV;
-            }
-        }
-
-        class Blake3DeriveKeySecondStage : Blake3
-        {
-            public Blake3DeriveKeySecondStage(byte [] firstStageKey)
-                : base(Flag.DeriveKeyMaterial)
-            {
-                Key = new uint[8];
-                MemoryMarshal.Cast<byte, uint>(firstStageKey).Slice(0, 8).CopyTo(Key);
-            }
-        }
-
         public Blake3DerivedKey(byte[] context, byte[] key)
-            : base(Flag.DeriveKeyMaterial)
+            : base(Flag.DeriveKeyMaterial, DeriveKey(context, key))
         {
-            _context = (byte[])context.Clone();
-            _key = (byte[])key.Clone();
         }
 
-        byte [] ComputeHashOfContext()
+        public Blake3DerivedKey(ReadOnlySpan<byte> context, ReadOnlySpan<byte> key)
+            : this(context.ToArray(), key.ToArray())
         {
-            var hasher = new Blake3DeriveKeyFirstStage();
-            hasher.TransformFinalBlock(_context, _context.Length, 0);
-            return hasher.Hash;
         }
 
-        byte[] ComputeHashOfKey(byte[] firstStageKey)
+        static byte [] ComputeHash(Flag flag, ReadOnlySpan<uint> key, byte[] message)
         {
-            var hasher = new Blake3DeriveKeySecondStage(firstStageKey);
-            hasher.TransformFinalBlock(_key, _context.Length, 0);
-            return hasher.Hash;
+            using (var hashAlgorithm = Blake3.Create(flag, key))
+                return hashAlgorithm.ComputeHash(message);
         }
 
-        public override void Initialize()
+        static byte[] DeriveKey(byte[] context, byte[] key)
         {
-            var keyContext = ComputeHashOfContext();
-            var keyBytes = ComputeHashOfKey(keyContext);
-
-            Key = new uint[8];
-            MemoryMarshal.Cast<byte, uint>(keyBytes).Slice(0, 8).CopyTo(Key);
-
-            base.Initialize();
+            var keyContext = ComputeHash(Flag.DeriveKeyContext, IV, context);
+            return ComputeHash(Flag.DeriveKeyMaterial, keyContext.AsUints(), key);
         }
     }
 }

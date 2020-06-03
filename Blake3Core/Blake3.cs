@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -27,16 +28,24 @@ namespace Blake3Core
         protected Flag DefaultFlag;
         protected uint[] Key;
 
-        protected Blake3(Flag defaultFlag)
+        protected Blake3(Flag defaultFlag, ReadOnlySpan<uint> key)
         {
             HashSizeValue = HashSizeInBits;
             DefaultFlag = defaultFlag;
+            Key = key.Slice(0, 8).ToArray();
         }
 
-        public Blake3()
-            : this(Flag.None)
+        protected Blake3(Flag defaultFlag, ReadOnlySpan<byte> key)
+            : this(defaultFlag, key.AsUints())
         {
-            Key = IV;
+        }
+
+        protected static Blake3 Create(Flag defaultFlag, ReadOnlySpan<uint> key)
+            => new Blake3(defaultFlag, key);
+
+        public Blake3()
+            : this(Flag.None, IV)
+        {
         }
 
         public override void Initialize()
