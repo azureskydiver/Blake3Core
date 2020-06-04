@@ -14,7 +14,6 @@ namespace Blake3Core
                       int blockLen = Blake3.BlockLength,
                       Flag flag = Flag.None)
         {
-            State s;
         }
 
         public byte[] GetRootBytes(int count)
