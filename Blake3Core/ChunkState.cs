@@ -9,24 +9,22 @@ namespace Blake3Core
     {
         ChainingValue _cv = new ChainingValue();
         byte[] _block = new byte[Blake3.BlockLength];
-        Flag _defaultFlag = Flag.None;
-        Flag _flags = Flag.None;
-        int _blockCount = 0;
+
+        uint[] _key;
+        ulong _blockCount = 0;
+        Flag _defaultFlag;
 
         public int Length { get; private set; } = 0;
         public ulong ChunkCount { get; private set; } = 0;
+        public bool IsComplete => Length == Blake3.ChunkLength;
+        public int Needed => Blake3.ChunkLength - Length;
+        public Output Output => null;
 
-        public ChunkState(Flag defaultFlag)
+        public ChunkState(ReadOnlySpan<uint> key, ulong chunkCount, Flag defaultFlag)
         {
+            _key = key.ToArray();
             _defaultFlag = defaultFlag;
-            _flags = defaultFlag;
-        }
-
-        public void MoveToNextChunk()
-        {
-            ChunkCount++;
-            _flags = _defaultFlag | Flag.ChunkStart;
-            Length = 0;
+            ChunkCount = chunkCount;
         }
 
         public void ZeroFillRestOfChunk()

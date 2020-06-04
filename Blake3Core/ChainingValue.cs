@@ -6,14 +6,13 @@ namespace Blake3Core
 {
     struct ChainingValue
     {
-        public uint _0;
-        public uint _1;
-        public uint _2;
-        public uint _3;
-        public uint _4;
-        public uint _5;
-        public uint _6;
-        public uint _7;
-        public uint _8;
+        public uint h0;
+        public uint h1;
+        public uint h2;
+        public uint h3;
+        public uint h4;
+        public uint h5;
+        public uint h6;
+        public uint h7;
     }
 }

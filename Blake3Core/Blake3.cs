@@ -1,5 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -7,7 +9,7 @@ namespace Blake3Core
 {
     public class Blake3 : HashAlgorithm
     {
-        const int HashSizeInBits = 8 * sizeof(uint);
+        const int HashSizeInBits = 16 * sizeof(uint);
 
         internal const int ChunkLength = 1024;
         internal const int BlockLength = 16 * sizeof(uint);
@@ -18,8 +20,9 @@ namespace Blake3Core
         protected private Flag DefaultFlag;
         protected uint[] Key;
 
+        ulong _blockCount;
         ChunkState _chunkState;
-        ChainingValueStack _chainingValueStack;
+        Stack<ChainingValue> _chainingValueStack;
 
         protected private Blake3(Flag defaultFlag, ReadOnlySpan<uint> key)
         {
@@ -43,48 +46,62 @@ namespace Blake3Core
 
         public override void Initialize()
         {
-            _chunkState = new ChunkState(DefaultFlag);
-            _chainingValueStack = new ChainingValueStack(DefaultFlag, Key);
+            _blockCount = 0;
+            _chunkState = new ChunkState(Key, 0, DefaultFlag);
+            _chainingValueStack = new Stack<ChainingValue>();
         }
 
-        void MoveToNextChunk()
+        Output GetParentOutput(ref ChainingValue l, ref ChainingValue r)
         {
-            var cv = _chunkState.ComputeChainingValue();
-            _chainingValueStack.Push(ref cv, _chunkState.ChunkCount);
-            _chunkState.MoveToNextChunk();
+            var block = new uint[16]
+            {
+                l.h0, l.h1, l.h2, l.h3, l.h4, l.h5, l.h6, l.h7,
+                r.h0, r.h1, r.h2, r.h3, r.h4, r.h5, r.h6, r.h7,
+            };
+            return new Output(key: Key, block: block, flag: DefaultFlag | Flag.Parent);
+        }
+
+        void AddChunkChainingValue(ref ChainingValue cv, ulong blockCount)
+        {
+            while ((blockCount & 1) == 0)
+            {
+                var left = _chainingValueStack.Pop();
+                cv = GetParentOutput(ref left, ref cv).ChainingValue;
+                blockCount >>= 1;
+            }
+            _chainingValueStack.Push(cv);
         }
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {
             var data = new ReadOnlyMemory<byte>(array, ibStart, cbSize);
-
-            var needed = ChunkLength - _chunkState.Length;
-            if (0 < needed && needed <= data.Length)
+            while (!data.IsEmpty)
             {
-                _chunkState.Update(data.Slice(0, needed));
-                MoveToNextChunk();
-                data = data.Slice(needed);
-            }
+                if (_chunkState.IsComplete)
+                {
+                    var cv = _chunkState.Output.ChainingValue;
+                    var newBlockCount = _blockCount + 1;
+                    AddChunkChainingValue(ref cv, newBlockCount);
+                    _chunkState = new ChunkState(Key, newBlockCount, DefaultFlag);
+                }
 
-            while (data.Length >= ChunkLength)
-            {
-                _chunkState.Update(data.Slice(0, ChunkLength));
-                MoveToNextChunk();
-                data = data.Slice(ChunkLength);
+                var available = Math.Min(_chunkState.Needed, data.Length);
+                _chunkState.Update(data.Slice(0, available));
+                data = data.Slice(available);
             }
-
-            if (data.Length > 0)
-                _chunkState.Update(data.Slice(0, data.Length));
         }
 
         protected override byte[] HashFinal()
         {
-            _chunkState.ZeroFillRestOfChunk();
-            var cv = _chunkState.ComputeChainingValue();
-            _chainingValueStack.Push(ref cv, _chunkState.ChunkCount);
+            var output = _chunkState.Output;
+            var cv = output.ChainingValue;
+            while (_chainingValueStack.Count > 0)
+            {
+                var left = _chainingValueStack.Pop();
+                output = GetParentOutput(ref left, ref cv);
+            }
 
-            //$ TODO: Merge chaining value stage and get final hash value
-            return null;
+            return output.GetRootBytes(HashSize / 8);
         }
     }
 }
