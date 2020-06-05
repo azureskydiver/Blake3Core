@@ -20,7 +20,6 @@ namespace Blake3Core
         protected private Flag DefaultFlag;
         protected uint[] Key;
 
-        ulong _blockCount;
         ChunkState _chunkState;
         Stack<ChainingValue> _chainingValueStack;
 
@@ -46,7 +45,6 @@ namespace Blake3Core
 
         public override void Initialize()
         {
-            _blockCount = 0;
             _chunkState = new ChunkState(Key, 0, DefaultFlag);
             _chainingValueStack = new Stack<ChainingValue>();
         }
@@ -61,17 +59,6 @@ namespace Blake3Core
             return new Output(key: Key, block: block, flag: DefaultFlag | Flag.Parent);
         }
 
-        void AddChunkChainingValue(ref ChainingValue cv, ulong blockCount)
-        {
-            while ((blockCount & 1) == 0)
-            {
-                var left = _chainingValueStack.Pop();
-                cv = GetParentOutput(ref left, ref cv).ChainingValue;
-                blockCount >>= 1;
-            }
-            _chainingValueStack.Push(cv);
-        }
-
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {
             var data = new ReadOnlyMemory<byte>(array, ibStart, cbSize);
@@ -80,14 +67,25 @@ namespace Blake3Core
                 if (_chunkState.IsComplete)
                 {
                     var cv = _chunkState.Output.ChainingValue;
-                    var newBlockCount = _blockCount + 1;
-                    AddChunkChainingValue(ref cv, newBlockCount);
-                    _chunkState = new ChunkState(Key, newBlockCount, DefaultFlag);
+                    AddChunkChainingValue(ref cv);
+                    _chunkState = new ChunkState(Key, _chunkState.ChunkCount + 1, DefaultFlag);
                 }
 
                 var available = Math.Min(_chunkState.Needed, data.Length);
                 _chunkState.Update(data.Slice(0, available));
                 data = data.Slice(available);
+            }
+
+            void AddChunkChainingValue(ref ChainingValue cv)
+            {
+                var chunkCount = _chunkState.ChunkCount + 1;
+                while ((chunkCount & 1) == 0)
+                {
+                    var left = _chainingValueStack.Pop();
+                    cv = GetParentOutput(ref left, ref cv).ChainingValue;
+                    chunkCount >>= 1;
+                }
+                _chainingValueStack.Push(cv);
             }
         }
 
