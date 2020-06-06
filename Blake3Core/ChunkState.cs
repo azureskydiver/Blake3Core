@@ -44,11 +44,5 @@ namespace Blake3Core
 
             //$ TODO: Cut chunk into blocks and process the blocks
         }
-
-        public ref ChainingValue ComputeChainingValue()
-        {
-            //$ TODO: compute chaining value with Flag.ChunkEnd and maybe Flag.ChunkStart
-            return ref _cv;
-        }
     }
 }
