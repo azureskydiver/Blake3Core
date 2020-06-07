@@ -8,8 +8,8 @@ namespace Blake3Core
     {
         public ChainingValue ChainingValue { get; private set; }
 
-        public Output(ReadOnlyMemory<uint> key,
-                      ReadOnlyMemory<uint> block,
+        public Output(ReadOnlySpan<uint> key,
+                      ReadOnlySpan<uint> block,
                       ulong counter = 0,
                       int blockLen = Blake3.BlockLength,
                       Flag flag = Flag.None)

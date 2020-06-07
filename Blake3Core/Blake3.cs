@@ -9,12 +9,13 @@ namespace Blake3Core
 {
     public class Blake3 : HashAlgorithm
     {
-        const int HashSizeInBits = 16 * sizeof(uint);
+        const int HashSizeInBytes = 16 * sizeof(uint);
+        const int HashSizeInBits = HashSizeInBytes * 8;
 
         internal const int ChunkLength = 1024;
         internal const int BlockLength = 16 * sizeof(uint);
 
-        protected static readonly uint [] IV =
+        internal static readonly uint [] IV =
             { 0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19 };
 
         protected private Flag DefaultFlag;
@@ -47,6 +48,7 @@ namespace Blake3Core
         {
             _chunkState = new ChunkState(Key, 0, DefaultFlag);
             _chainingValueStack = new Stack<ChainingValue>();
+            HashValue = new byte[HashSizeInBytes];
         }
 
         Output GetParentOutput(ref ChainingValue l, ref ChainingValue r)
