@@ -51,7 +51,7 @@ namespace Blake3Core
             HashValue = new byte[HashSizeInBytes];
         }
 
-        Output GetParentOutput(ref ChainingValue l, ref ChainingValue r)
+        Output GetParentOutput(in ChainingValue l, in ChainingValue r)
         {
             var block = new uint[16]
             {
@@ -68,8 +68,7 @@ namespace Blake3Core
             {
                 if (_chunkState.IsComplete)
                 {
-                    var cv = _chunkState.Output.ChainingValue;
-                    AddChunkChainingValue(ref cv);
+                    AddChunkChainingValue(_chunkState.Output.ChainingValue);
                     _chunkState = new ChunkState(Key, _chunkState.ChunkCount + 1, DefaultFlag);
                 }
 
@@ -78,13 +77,12 @@ namespace Blake3Core
                 data = data.Slice(available);
             }
 
-            void AddChunkChainingValue(ref ChainingValue cv)
+            void AddChunkChainingValue(ChainingValue cv)
             {
                 var chunkCount = _chunkState.ChunkCount + 1;
                 while ((chunkCount & 1) == 0)
                 {
-                    var left = _chainingValueStack.Pop();
-                    cv = GetParentOutput(ref left, ref cv).ChainingValue;
+                    cv = GetParentOutput(_chainingValueStack.Pop(), cv).ChainingValue;
                     chunkCount >>= 1;
                 }
                 _chainingValueStack.Push(cv);
@@ -96,10 +94,7 @@ namespace Blake3Core
             var output = _chunkState.Output;
             var cv = output.ChainingValue;
             while (_chainingValueStack.Count > 0)
-            {
-                var left = _chainingValueStack.Pop();
-                output = GetParentOutput(ref left, ref cv);
-            }
+                output = GetParentOutput(_chainingValueStack.Pop(), cv);
 
             return output.GetRootBytes(HashSize / 8);
         }
