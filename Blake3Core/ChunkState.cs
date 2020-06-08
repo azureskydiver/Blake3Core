@@ -10,19 +10,19 @@ namespace Blake3Core
         ChainingValue _cv = new ChainingValue();
         byte[] _block = new byte[Blake3.BlockLength];
 
-        uint[] _key;
-        ulong _blockCount = 0;
+        int _blockCount = 0;
+        int _blockLength = 0;
         Flag _defaultFlag;
 
-        public int Length { get; private set; } = 0;
         public ulong ChunkCount { get; private set; } = 0;
-        public bool IsComplete => Length == Blake3.ChunkLength;
+        public int Length => _blockCount * Blake3.ChunkLength + _blockLength;
         public int Needed => Blake3.ChunkLength - Length;
+        public bool IsComplete => Length == Blake3.ChunkLength;
         public Output Output => null;
 
         public ChunkState(ReadOnlySpan<uint> key, ulong chunkCount, Flag defaultFlag)
         {
-            _key = key.ToArray();
+            _cv.Initialize(key);
             _defaultFlag = defaultFlag;
             ChunkCount = chunkCount;
         }
@@ -38,11 +38,30 @@ namespace Blake3Core
             }
         }
 
-        public void Update(ReadOnlyMemory<byte> data)
+        void CompressBlock(ReadOnlySpan<byte> block)
+        {
+            var isStart = _blockCount == 0 ? Flag.ChunkStart : Flag.None;
+            _cv = Compressor.Compress(cv: _cv, block: block.AsUints(), counter: ChunkCount, flag: _defaultFlag | isStart).cv;
+            _blockCount++;
+            _blockLength = 0;
+        }
+
+        public void Update(ReadOnlySpan<byte> data)
         {
             Debug.Assert(data.Length <= Blake3.ChunkLength);
 
-            //$ TODO: Cut chunk into blocks and process the blocks
+            if (_blockLength == Blake3.BlockLength)
+                CompressBlock(_block);
+
+            while (data.Length > Blake3.BlockLength)
+            {
+                CompressBlock(data.Slice(0, Blake3.BlockLength));
+                data = data.Slice(Blake3.BlockLength);
+            }
+
+            var available = Math.Min(data.Length, Blake3.BlockLength - _blockLength);
+            data.Slice(0, available).CopyTo(_block);
+            _blockLength += available;
         }
     }
 }

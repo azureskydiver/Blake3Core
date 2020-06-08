@@ -9,8 +9,8 @@ namespace Blake3Core
 {
     static class Compressor
     {
-        public static unsafe State Compress(ReadOnlySpan<uint> cv,
-                                            ReadOnlySpan<uint> blockIn,
+        public static unsafe State Compress(in ChainingValue cv,
+                                            ReadOnlySpan<uint> block,
                                             ulong counter = 0,
                                             int blockLen = Blake3.BlockLength,
                                             Flag flag = Flag.None)
@@ -18,9 +18,9 @@ namespace Blake3Core
             State s = new State(cv, counter, blockLen, flag);
             uint* state = s.s;
 
-            var block = stackalloc uint[16];
+            var message = stackalloc uint[16];
             for (int i = 0; i < 16; i++)
-                block[i] = blockIn[i];
+                message[i] = block[i];
 
             Round();
             Permute();
@@ -39,32 +39,32 @@ namespace Blake3Core
             for (int i = 0; i < 8; i++)
             {
                 state[i] ^= state[i + 8];
-                state[i + 8] ^= cv[i];
+                state[i + 8] ^= cv.h[i];
             }
             return s;
 
             void Round()
             {
                 // Mix the columns.
-                G(0, 4, 8, 12, block[0], block[1]);
-                G(1, 5, 9, 13, block[2], block[3]);
-                G(2, 6, 10, 14, block[4], block[5]);
-                G(3, 7, 11, 15, block[6], block[7]);
+                G(0, 4, 8, 12, message[0], message[1]);
+                G(1, 5, 9, 13, message[2], message[3]);
+                G(2, 6, 10, 14, message[4], message[5]);
+                G(3, 7, 11, 15, message[6], message[7]);
 
                 // Mix the diagonals.
-                G(0, 5, 10, 15, block[8], block[9]);
-                G(1, 6, 11, 12, block[10], block[11]);
-                G(2, 7, 8, 13, block[12], block[13]);
-                G(3, 4, 9, 14, block[14], block[15]);
+                G(0, 5, 10, 15, message[8], message[9]);
+                G(1, 6, 11, 12, message[10], message[11]);
+                G(2, 7, 8, 13, message[12], message[13]);
+                G(3, 4, 9, 14, message[14], message[15]);
             }
 
             void Permute()
             {
                 var old = stackalloc uint[16];
                 for(int i = 0; i < 16; i++)
-                    old[i] = block[i];
+                    old[i] = message[i];
                 for (int i = 0; i < 16; i++)
-                    block[i] = old[Permutation[i]];
+                    message[i] = old[Permutation[i]];
             }
 
             void G(int a, int b, int c, int d, uint mx, uint my)

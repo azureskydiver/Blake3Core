@@ -53,17 +53,14 @@ namespace Blake3Core
 
         Output GetParentOutput(in ChainingValue l, in ChainingValue r)
         {
-            var block = new uint[16]
-            {
-                l.h0, l.h1, l.h2, l.h3, l.h4, l.h5, l.h6, l.h7,
-                r.h0, r.h1, r.h2, r.h3, r.h4, r.h5, r.h6, r.h7,
-            };
+            Span<ChainingValue> cvs = stackalloc ChainingValue[2] { l, r };
+            Span<uint> block = MemoryMarshal.Cast<ChainingValue, uint>(cvs);
             return new Output(key: Key, block: block, flag: DefaultFlag | Flag.Parent);
         }
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {
-            var data = new ReadOnlyMemory<byte>(array, ibStart, cbSize);
+            var data = new ReadOnlySpan<byte>(array, ibStart, cbSize);
             while (!data.IsEmpty)
             {
                 if (_chunkState.IsComplete)

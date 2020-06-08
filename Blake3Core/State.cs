@@ -11,12 +11,12 @@ namespace Blake3Core
         [FieldOffset(0)] public fixed uint s[16];
         [FieldOffset(0)] public ChainingValue cv;
 
-        public State(ReadOnlySpan<uint> cvIn,
+        public State(in ChainingValue cv,
                      ulong counter = 0,
                      int blockLen = Blake3.BlockLength,
                      Flag flag = Flag.None)
         {
-            cv = MemoryMarshal.Cast<uint, ChainingValue>(cvIn)[0];
+            this.cv = cv;
 
             s[8] = Blake3.IV[0];
             s[9] = Blake3.IV[1];
