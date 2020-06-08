@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using System.Text;
 
 namespace Blake3Core
@@ -18,11 +19,26 @@ namespace Blake3Core
         public int Length => _blockCount * Blake3.ChunkLength + _blockLength;
         public int Needed => Blake3.ChunkLength - Length;
         public bool IsComplete => Length == Blake3.ChunkLength;
-        public Output Output => null;
 
-        public ChunkState(ReadOnlySpan<uint> key, ulong chunkCount, Flag defaultFlag)
+        public Output Output
         {
-            _cv.Initialize(key);
+            get
+            {
+                for (int i = _blockLength; i < Blake3.BlockLength; i++)
+                    _block[i] = 0;
+
+                var isStart = _blockCount == 0 ? Flag.ChunkStart : Flag.None;
+                return new Output(cv: _cv,
+                                  block: _block.AsLittleEndianUints(),
+                                  counter: ChunkCount,
+                                  blockLen: _blockLength,
+                                  flag: _defaultFlag | isStart | Flag.ChunkEnd);
+            }
+        }
+
+        public ChunkState(in ChainingValue cv, ulong chunkCount, Flag defaultFlag)
+        {
+            _cv = cv;
             _defaultFlag = defaultFlag;
             ChunkCount = chunkCount;
         }
@@ -41,7 +57,10 @@ namespace Blake3Core
         void CompressBlock(ReadOnlySpan<byte> block)
         {
             var isStart = _blockCount == 0 ? Flag.ChunkStart : Flag.None;
-            _cv = Compressor.Compress(cv: _cv, block: block.AsUints(), counter: ChunkCount, flag: _defaultFlag | isStart).cv;
+            _cv = Compressor.Compress(cv: _cv,
+                                      block: block.AsLittleEndianUints(),
+                                      counter: ChunkCount,
+                                      flag: _defaultFlag | isStart).cv;
             _blockCount++;
             _blockLength = 0;
         }

@@ -18,5 +18,12 @@ namespace Blake3Core
 
         public static ReadOnlySpan<uint> AsUints<T>(this ReadOnlySpan<T> span) where T : struct
             => MemoryMarshal.Cast<T, uint>(span);
+
+        //$ TODO: Figure what to do on Big Endian machines
+        public static ReadOnlySpan<uint> AsLittleEndianUints<T>(this T[] span) where T : struct
+            => MemoryMarshal.Cast<T, uint>(span);
+
+        public static ReadOnlySpan<uint> AsLittleEndianUints<T>(this ReadOnlySpan<T> span) where T : struct
+            => MemoryMarshal.Cast<T, uint>(span);
     }
 }

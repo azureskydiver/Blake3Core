@@ -19,8 +19,8 @@ namespace Blake3Core
             { 0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19 };
 
         protected private Flag DefaultFlag;
-        protected uint[] Key;
 
+        ChainingValue _cv;
         ChunkState _chunkState;
         Stack<ChainingValue> _chainingValueStack;
 
@@ -28,7 +28,7 @@ namespace Blake3Core
         {
             HashSizeValue = HashSizeInBits;
             DefaultFlag = defaultFlag;
-            Key = key.Slice(0, 8).ToArray();
+            _cv.Initialize(key.Slice(0, 8).ToArray());
         }
 
         protected private Blake3(Flag defaultFlag, ReadOnlySpan<byte> key)
@@ -46,7 +46,7 @@ namespace Blake3Core
 
         public override void Initialize()
         {
-            _chunkState = new ChunkState(Key, 0, DefaultFlag);
+            _chunkState = new ChunkState(_cv, 0, DefaultFlag);
             _chainingValueStack = new Stack<ChainingValue>();
             HashValue = new byte[HashSizeInBytes];
         }
@@ -55,7 +55,7 @@ namespace Blake3Core
         {
             Span<ChainingValue> cvs = stackalloc ChainingValue[2] { l, r };
             Span<uint> block = MemoryMarshal.Cast<ChainingValue, uint>(cvs);
-            return new Output(key: Key, block: block, flag: DefaultFlag | Flag.Parent);
+            return new Output(cv: _cv, block: block, flag: DefaultFlag | Flag.Parent);
         }
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
@@ -66,7 +66,7 @@ namespace Blake3Core
                 if (_chunkState.IsComplete)
                 {
                     AddChunkChainingValue(_chunkState.Output.ChainingValue);
-                    _chunkState = new ChunkState(Key, _chunkState.ChunkCount + 1, DefaultFlag);
+                    _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
                 }
 
                 var available = Math.Min(_chunkState.Needed, data.Length);
