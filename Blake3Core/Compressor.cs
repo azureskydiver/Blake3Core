@@ -1,5 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Blake3Core
@@ -12,24 +15,8 @@ namespace Blake3Core
                                             int blockLen = Blake3.BlockLength,
                                             Flag flag = Flag.None)
         {
-            var state = stackalloc uint[16];
-
-            state[0] = cv[0];
-            state[1] = cv[1];
-            state[2] = cv[2];
-            state[3] = cv[3];
-            state[4] = cv[4];
-            state[5] = cv[5];
-            state[6] = cv[6];
-            state[7] = cv[7];
-            state[8] = Blake3.IV[0];
-            state[9] = Blake3.IV[1];
-            state[10] = Blake3.IV[2];
-            state[11] = Blake3.IV[3];
-            state[12] = (uint)counter;
-            state[13] = (uint)(counter >> 32);
-            state[14] = (uint)blockLen;
-            state[15] = (uint)flag;
+            State s = new State(cv, counter, blockLen, flag);
+            uint* state = s.s;
 
             var block = stackalloc uint[16];
             for (int i = 0; i < 16; i++)
@@ -54,7 +41,6 @@ namespace Blake3Core
                 state[i] ^= state[i + 8];
                 state[i + 8] ^= cv[i];
             }
-            State s = new State(state);
             return s;
 
             void Round()
