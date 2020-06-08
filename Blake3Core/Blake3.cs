@@ -9,9 +9,9 @@ namespace Blake3Core
 {
     public class Blake3 : HashAlgorithm
     {
-        const int HashSizeInBytes = 16 * sizeof(uint);
         const int HashSizeInBits = HashSizeInBytes * 8;
 
+        internal const int HashSizeInBytes = 16 * sizeof(uint);
         internal const int ChunkLength = 1024;
         internal const int BlockLength = 16 * sizeof(uint);
 
