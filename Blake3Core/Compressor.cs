@@ -9,78 +9,79 @@ namespace Blake3Core
 {
     static class Compressor
     {
-        public static unsafe State Compress(in ChainingValue cv,
-                                            ReadOnlySpan<uint> block,
-                                            ulong counter = 0,
-                                            int blockLen = Blake3.BlockLength,
-                                            Flag flag = Flag.None)
+        public static State Compress(in ChainingValue cv,
+                                     ReadOnlySpan<uint> block,
+                                     ulong counter = 0,
+                                     int blockLen = Blake3.BlockLength,
+                                     Flag flag = Flag.None)
         {
-            State s = new State(cv, counter, blockLen, flag);
-            uint* state = s.s;
-
-            var message = stackalloc uint[16];
+            Span<uint> message = stackalloc uint[16];
             for (int i = 0; i < 16; i++)
                 message[i] = block[i];
 
-            Round();
-            Permute();
-            Round();
-            Permute();
-            Round();
-            Permute();
-            Round();
-            Permute();
-            Round();
-            Permute();
-            Round();
-            Permute();
-            Round();
+            State state = new State(cv, counter, blockLen, flag);
+            var s = state.AsWritableUints();
 
+            Round(s, message);
+            Permute(message);
+            Round(s, message);
+            Permute(message);
+            Round(s, message);
+            Permute(message);
+            Round(s, message);
+            Permute(message);
+            Round(s, message);
+            Permute(message);
+            Round(s, message);
+            Permute(message);
+            Round(s, message);
+
+            var h = cv.AsUints();
             for (int i = 0; i < 8; i++)
             {
-                state[i] ^= state[i + 8];
-                state[i + 8] ^= cv.h[i];
+                s[i] ^= s[i + 8];
+                s[i + 8] ^= h[i];
             }
-            return s;
+            return state;
+        }
 
-            void Round()
+        static void Round(Span<uint> s, ReadOnlySpan<uint> m)
+        {
+            // Mix the columns.
+            G(s, 0, 4, 8, 12, m[0], m[1]);
+            G(s, 1, 5, 9, 13, m[2], m[3]);
+            G(s, 2, 6, 10, 14, m[4], m[5]);
+            G(s, 3, 7, 11, 15, m[6], m[7]);
+
+            // Mix the diagonals.
+            G(s, 0, 5, 10, 15, m[8], m[9]);
+            G(s, 1, 6, 11, 12, m[10], m[11]);
+            G(s, 2, 7, 8, 13, m[12], m[13]);
+            G(s, 3, 4, 9, 14, m[14], m[15]);
+        }
+
+        static void G(Span<uint> s, int a, int b, int c, int d, uint mx, uint my)
+        {
+            unchecked
             {
-                // Mix the columns.
-                G(0, 4, 8, 12, message[0], message[1]);
-                G(1, 5, 9, 13, message[2], message[3]);
-                G(2, 6, 10, 14, message[4], message[5]);
-                G(3, 7, 11, 15, message[6], message[7]);
-
-                // Mix the diagonals.
-                G(0, 5, 10, 15, message[8], message[9]);
-                G(1, 6, 11, 12, message[10], message[11]);
-                G(2, 7, 8, 13, message[12], message[13]);
-                G(3, 4, 9, 14, message[14], message[15]);
+                s[a] = s[a] + s[b] + mx;
+                s[d] = (s[d] ^ s[a]).RotateRight(16);
+                s[c] = s[c] + s[d];
+                s[b] = (s[b] ^ s[c]).RotateRight(12);
+                s[a] = s[a] + s[b] + my;
+                s[d] = (s[d] ^ s[a]).RotateRight(8);
+                s[c] = s[c] + s[d];
+                s[b] = (s[b] ^ s[c]).RotateRight(7);
             }
+        }
 
-            void Permute()
-            {
-                var old = stackalloc uint[16];
-                for(int i = 0; i < 16; i++)
-                    old[i] = message[i];
-                for (int i = 0; i < 16; i++)
-                    message[i] = old[Permutation[i]];
-            }
-
-            void G(int a, int b, int c, int d, uint mx, uint my)
-            {
-                unchecked
-                {
-                    state[a] = state[a] + state[b] + mx;
-                    state[d] = (state[d] ^ state[a]).RotateRight(16);
-                    state[c] = state[c] + state[d];
-                    state[b] = (state[b] ^ state[c]).RotateRight(12);
-                    state[a] = state[a] + state[b] + my;
-                    state[d] = (state[d] ^ state[a]).RotateRight(8);
-                    state[c] = state[c] + state[d];
-                    state[b] = (state[b] ^ state[c]).RotateRight(7);
-                }
-            }
+        static void Permute(Span<uint> m)
+        {
+            Span<uint> old = stackalloc uint[16];
+            for (int i = 0; i < 16; i++)
+                old[i] = m[i];
+            for (int i = 0; i < 16; i++)
+                m[i] = old[Permutation[i]];
         }
 
         static readonly int[] Permutation = { 2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8 };

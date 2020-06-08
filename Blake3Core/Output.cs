@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
+using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Blake3Core
@@ -32,28 +33,26 @@ namespace Blake3Core
                                                 flag: _flag).cv;
         }
 
-        public unsafe byte[] GetRootBytes(int count)
+        public byte[] GetRootBytes(int count)
         {
             ulong counter = 0;
             var bytes = new byte[count];
-            fixed (byte* bytesStart = bytes)
+            var outputSpan = bytes.AsSpan();
+            while (!outputSpan.IsEmpty)
             {
-                byte* dst = bytesStart;
-                while (count > 0)
-                {
-                    var state = Compressor.Compress(cv: _cv,
-                                                    block: _block,
-                                                    counter: counter,
-                                                    blockLen: _blockLen,
-                                                    flag: _flag | Flag.Root);
+                var state = Compressor.Compress(cv: _cv,
+                                                block: _block,
+                                                counter: counter,
+                                                blockLen: _blockLen,
+                                                flag: _flag | Flag.Root);
 
-                    var bytesNeeded = Math.Min(count, Blake3.HashSizeInBytes);
-                    Unsafe.CopyBlock(dst, state.s, (uint)bytesNeeded);
+                var stateBytes = state.AsBytes();
+                var bytesNeeded = Math.Min(outputSpan.Length, stateBytes.Length);
+                stateBytes.Slice(0, bytesNeeded).CopyTo(outputSpan);
+                outputSpan = outputSpan.Slice(bytesNeeded);
 
-                    dst += bytesNeeded;
-                    count -= bytesNeeded;
-                    counter++;
-                }
+                count -= bytesNeeded;
+                counter++;
             }
 
             return bytes;

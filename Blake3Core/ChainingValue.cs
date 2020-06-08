@@ -15,5 +15,14 @@ namespace Blake3Core
             for (int i = 0; i < 8; i++)
                 h[i] = k[i];
         }
+
+        public ReadOnlySpan<uint> AsUints()
+        {
+            fixed (uint* hashes = h)
+                return new ReadOnlySpan<uint>(hashes, 8);
+        }
+
+        public ReadOnlySpan<byte> AsBytes()
+            => AsUints().AsBytes();
     }
 }

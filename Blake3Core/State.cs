@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -26,6 +27,21 @@ namespace Blake3Core
             s[13] = (uint)(counter >> 32);
             s[14] = (uint)blockLen;
             s[15] = (uint)flag;
+        }
+
+        public ReadOnlySpan<uint> AsUints()
+        {
+            fixed (uint * states = s)
+                return new ReadOnlySpan<uint>(states, 16);
+        }
+
+        public ReadOnlySpan<byte> AsBytes()
+            => AsUints().AsBytes();
+
+        public Span<uint> AsWritableUints()
+        {
+            fixed (uint* states = s)
+                return new Span<uint>(states, 16);
         }
     }
 }
