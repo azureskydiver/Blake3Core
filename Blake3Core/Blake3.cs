@@ -28,11 +28,14 @@ namespace Blake3Core
         {
             HashSizeValue = HashSizeInBits;
             DefaultFlag = defaultFlag;
-            _cv.Initialize(key.Slice(0, 8).ToArray());
+
+            if (key.Length != 8)
+                throw new ArgumentException("Must use 256-bit key", nameof(key));
+            _cv.Initialize(key.ToArray());
         }
 
         protected private Blake3(Flag defaultFlag, ReadOnlySpan<byte> key)
-            : this(defaultFlag, key.AsUints())
+            : this(defaultFlag, key.Length == 32 ? key.AsUints() : new ReadOnlySpan<uint>())
         {
         }
 
