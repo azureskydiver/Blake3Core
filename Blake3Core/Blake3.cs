@@ -23,6 +23,7 @@ namespace Blake3Core
         ChainingValue _cv;
         ChunkState _chunkState;
         Stack<ChainingValue> _chainingValueStack;
+        Output _finalOutput;
 
         protected private Blake3(Flag defaultFlag, ReadOnlySpan<uint> key)
         {
@@ -62,6 +63,7 @@ namespace Blake3Core
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {
+            _finalOutput = null;
             if (_chunkState == null)
                 Initialize();
 
@@ -91,14 +93,22 @@ namespace Blake3Core
             }
         }
 
-        protected override byte[] HashFinal()
+        Output GetFinalOutput()
         {
             var output = _chunkState.Output;
             var cv = output.ChainingValue;
             while (_chainingValueStack.Count > 0)
                 output = GetParentOutput(_chainingValueStack.Pop(), cv);
 
-            return output.GetRootBytes(HashSize / 8);
+            return output;
         }
+
+        protected override byte[] HashFinal()
+        {
+            _finalOutput = GetFinalOutput();
+            return GetExtendedOutput().Take(HashSize / 8).ToArray();
+        }
+
+        public IEnumerable<byte> GetExtendedOutput() => _finalOutput.GetRootBytes();
     }
 }

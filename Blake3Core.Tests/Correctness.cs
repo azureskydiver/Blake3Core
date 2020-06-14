@@ -18,8 +18,22 @@ namespace Blake3Core.Tests
             var hasher = new Blake3();
             var input = GetInputBytes(testVector.InputLength).ToArray();
             var hash = hasher.ComputeHash(input);
+            var expectedHash = testVector.Hash.FromHex();
+
             Assert.Equal(64, hash.Length);
-            Assert.Equal(testVector.Hash.FromHex().Take(hash.Length).ToArray().ToHex(), hash.ToHex());
+            Assert.Equal(expectedHash.Take(hash.Length).ToArray().ToHex(), hash.ToHex());
+        }
+
+        [Theory]
+        [ClassData(typeof(TestVectors))]
+        void VerifyExtendedOutput(TestVector testVector)
+        {
+            var hasher = new Blake3();
+            var input = GetInputBytes(testVector.InputLength).ToArray();
+            var hash = hasher.ComputeHash(input);
+            var expectedHash = testVector.Hash.FromHex();
+
+            Assert.Equal(testVector.Hash, hasher.GetExtendedOutput().Take(expectedHash.Length).ToArray().ToHex());
         }
     }
 }
