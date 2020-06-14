@@ -26,7 +26,7 @@ namespace Blake3Core.Tests
 
         [Theory]
         [ClassData(typeof(TestVectors))]
-        void VerifyExtendedOutput(TestVector testVector)
+        void VerifyHashExtendedOutput(TestVector testVector)
         {
             var hasher = new Blake3();
             var input = GetInputBytes(testVector.InputLength).ToArray();
@@ -34,6 +34,18 @@ namespace Blake3Core.Tests
             var expectedHash = testVector.Hash.FromHex();
 
             Assert.Equal(testVector.Hash, hasher.GetExtendedOutput().Take(expectedHash.Length).ToArray().ToHex());
+        }
+
+        [Theory]
+        [ClassData(typeof(TestVectors))]
+        void VerifyKeyedHashExtendedOutput(TestVector testVector)
+        {
+            var hasher = new Blake3Keyed(testVector.Key.FromHex());
+            var input = GetInputBytes(testVector.InputLength).ToArray();
+            var hash = hasher.ComputeHash(input);
+            var expectedHash = testVector.KeyedHash.FromHex();
+
+            Assert.Equal(testVector.KeyedHash, hasher.GetExtendedOutput().Take(expectedHash.Length).ToArray().ToHex());
         }
     }
 }
