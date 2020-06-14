@@ -2,78 +2,18 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
-using Xunit.Abstractions;
 
 namespace Blake3Core.Tests
 {
-    public class TestVector : IXunitSerializable
-    {
-        public int InputLength { get; set; }
-        public string Hash { get; set; }
-        public string KeyedHash { get; set; }
-        public string DerivedKeyHash { get; set; }
-        public string Key { get; set; }
-
-        public void Deserialize(IXunitSerializationInfo info)
-        {
-            InputLength = info.GetValue<int>(nameof(InputLength));
-            Hash = info.GetValue<string>(nameof(Hash));
-            KeyedHash = info.GetValue<string>(nameof(KeyedHash));
-            DerivedKeyHash = info.GetValue<string>(nameof(DerivedKeyHash));
-            Key = info.GetValue<string>(nameof(Key));
-        }
-
-        public void Serialize(IXunitSerializationInfo info)
-        {
-            info.AddValue(nameof(InputLength), InputLength);
-            info.AddValue(nameof(Hash), Hash);
-            info.AddValue(nameof(KeyedHash), KeyedHash);
-            info.AddValue(nameof(DerivedKeyHash), DerivedKeyHash);
-            info.AddValue(nameof(Key), Key);
-        }
-
-        public override string ToString()
-        {
-            return $"{{ InputLength={InputLength,6}, Hash={Hash}, KeyedHash={KeyedHash}, DerivedKeyHash={DerivedKeyHash}, Key={Key} }}";
-        }
-    }
-
-    public static class StringExtensions
-    {
-        public static byte[] FromHex(this string s)
-        {
-            Assert.True(s.Length % 2 == 0);
-            var bytes = new List<byte>(s.Length / 2);
-            var span = s.AsSpan();
-            while (!span.IsEmpty)
-            {
-                if (!byte.TryParse(span.Slice(0, 2), NumberStyles.HexNumber, null, out byte value))
-                    throw new InvalidDataException($"Unexpected data string with byte data.");
-                bytes.Add(value);
-                span = span.Slice(2);
-            }
-            return bytes.ToArray();
-        }
-        
-        public static string ToHex(this byte[] bytes)
-        {
-            var sb = new StringBuilder(bytes.Length * 2);
-            foreach (var b in bytes)
-                sb.Append(b.ToString("x2"));
-            return sb.ToString();
-        }
-    }
-
     public class TestVectors : IEnumerable<object[]>
     {
-        public struct TestCase
+        struct TestCase
         {
             [JsonPropertyName("input_len")]
             public int InputLength { get; set; }
@@ -88,7 +28,7 @@ namespace Blake3Core.Tests
             public string DerivedKeyHash { get; set; }
         }
 
-        public struct Vectors
+        struct Vectors
         {
             [JsonPropertyName("_comment")]
             public string Comment { get; set; }
