@@ -41,7 +41,7 @@ namespace Blake3Core.Tests
 
         public override string ToString()
         {
-            return $"{{ InputLength={InputLength}, Hash={Hash}, KeyedHash={KeyedHash}, DerivedKeyHash={DerivedKeyHash}, Key={Key} }}";
+            return $"{{ InputLength={InputLength,6}, Hash={Hash}, KeyedHash={KeyedHash}, DerivedKeyHash={DerivedKeyHash}, Key={Key} }}";
         }
     }
 
