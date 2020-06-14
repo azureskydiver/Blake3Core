@@ -15,6 +15,8 @@ namespace Blake3Core
                                      int blockLen = Blake3.BlockLength,
                                      Flag flag = Flag.None)
         {
+            uint flagValue = (uint)flag;
+
             Span<uint> message = stackalloc uint[16];
             for (int i = 0; i < 16; i++)
                 message[i] = block[i];
