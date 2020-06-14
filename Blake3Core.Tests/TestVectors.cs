@@ -9,6 +9,7 @@ using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using Xunit;
+using Xunit.Abstractions;
 
 namespace Blake3Core.Tests
 {
@@ -19,11 +20,16 @@ namespace Blake3Core.Tests
         public byte[] Hash { get; set; }
         public byte[] KeyedHash { get; set; }
         public byte[] DerivedKeyHash { get; set; }
+
+        public override string ToString()
+        {
+            return $"{{ InputLength={InputLength}, Hash={Hash.ToHex()}, KeyedHash={KeyedHash.ToHex()}, DerivedKeyHash={DerivedKeyHash.ToHex()}, Key={Key.ToHex()} }}";
+        }
     }
 
     public static class StringExtensions
     {
-        public static byte[] ConvertHexStringToBytes(this string s)
+        public static byte[] FromHex(this string s)
         {
             Assert.True(s.Length % 2 == 0);
             var bytes = new List<byte>(s.Length / 2);
@@ -37,6 +43,9 @@ namespace Blake3Core.Tests
             }
             return bytes.ToArray();
         }
+        
+        public static string ToHex(this byte[] bytes)
+            => BitConverter.ToString(bytes).Replace("-", "");
     }
 
     public class TestVectors : IEnumerable<object[]>
@@ -84,9 +93,9 @@ namespace Blake3Core.Tests
                     {
                         Key = (byte[]) keyBytes.Clone(),
                         InputLength = testCase.InputLength,
-                        Hash = testCase.Hash.ConvertHexStringToBytes(),
-                        KeyedHash = testCase.KeyedHash.ConvertHexStringToBytes(),
-                        DerivedKeyHash = testCase.DerivedKeyHash.ConvertHexStringToBytes(),
+                        Hash = testCase.Hash.FromHex(),
+                        KeyedHash = testCase.KeyedHash.FromHex(),
+                        DerivedKeyHash = testCase.DerivedKeyHash.FromHex(),
                     }
                 };
             }
