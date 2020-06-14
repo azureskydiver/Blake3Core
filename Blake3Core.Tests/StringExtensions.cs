@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Runtime.Serialization;
 using System.Text;
 using Xunit;
 
@@ -16,12 +17,20 @@ namespace Blake3Core.Tests
             var span = s.AsSpan();
             while (!span.IsEmpty)
             {
-                if (!byte.TryParse(span.Slice(0, 2), NumberStyles.HexNumber, null, out byte value))
-                    throw new InvalidDataException($"Unexpected data string with byte data.");
-                bytes.Add(value);
+                bytes.Add((byte)((GetNibble(span[0]) << 4) + GetNibble(span[1])));
                 span = span.Slice(2);
             }
             return bytes.ToArray();
+
+            int GetNibble(char ch)
+            {
+                int index = "0123456789abcdef".IndexOf(ch);
+                if (index < 0)
+                    index = "0123456789ABCDEF".IndexOf(ch);
+                if (index < 0)
+                    throw new InvalidDataException($"Unexpected data string with byte data.");
+                return index;
+            }
         }
         
         public static string ToHex(this byte[] bytes)
