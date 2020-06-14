@@ -15,15 +15,15 @@ namespace Blake3Core.Tests
 {
     public class TestVector
     {
-        public byte[] Key { get; set; }
+        public string Key { get; set; }
         public int InputLength { get; set; }
-        public byte[] Hash { get; set; }
-        public byte[] KeyedHash { get; set; }
-        public byte[] DerivedKeyHash { get; set; }
+        public string Hash { get; set; }
+        public string KeyedHash { get; set; }
+        public string DerivedKeyHash { get; set; }
 
         public override string ToString()
         {
-            return $"{{ InputLength={InputLength}, Hash={Hash.ToHex()}, KeyedHash={KeyedHash.ToHex()}, DerivedKeyHash={DerivedKeyHash.ToHex()}, Key={Key.ToHex()} }}";
+            return $"{{ InputLength={InputLength}, Hash={Hash}, KeyedHash={KeyedHash}, DerivedKeyHash={DerivedKeyHash}, Key={Key} }}";
         }
     }
 
@@ -45,7 +45,12 @@ namespace Blake3Core.Tests
         }
         
         public static string ToHex(this byte[] bytes)
-            => BitConverter.ToString(bytes).Replace("-", "");
+        {
+            var sb = new StringBuilder(bytes.Length * 2);
+            foreach (var b in bytes)
+                sb.Append(b.ToString("x"));
+            return sb.ToString();
+        }
     }
 
     public class TestVectors : IEnumerable<object[]>
@@ -85,17 +90,18 @@ namespace Blake3Core.Tests
 
             var jsonTestVectors = JsonSerializer.Deserialize<Vectors>(File.ReadAllText(path));
             var keyBytes = Encoding.ASCII.GetBytes(jsonTestVectors.Key);
+            var key = keyBytes.ToHex();
 
             foreach (var testCase in jsonTestVectors.Cases)
             {
                 yield return new object[] {
                     new TestVector()
                     {
-                        Key = (byte[]) keyBytes.Clone(),
+                        Key = key,
                         InputLength = testCase.InputLength,
-                        Hash = testCase.Hash.FromHex(),
-                        KeyedHash = testCase.KeyedHash.FromHex(),
-                        DerivedKeyHash = testCase.DerivedKeyHash.FromHex(),
+                        Hash = testCase.Hash,
+                        KeyedHash = testCase.KeyedHash,
+                        DerivedKeyHash = testCase.DerivedKeyHash,
                     }
                 };
             }
@@ -116,16 +122,18 @@ namespace Blake3Core.Tests
 
                 var testVector = objArray[0] as TestVector;
                 Assert.True(testVector.InputLength >= 0);
-                AssertIsValidHashBytes(testVector.Key);
-                AssertIsValidHashBytes(testVector.Hash);
-                AssertIsValidHashBytes(testVector.KeyedHash);
-                AssertIsValidHashBytes(testVector.DerivedKeyHash);
+                AssertIsValidHexString(testVector.Key);
+                AssertIsValidHexString(testVector.Hash);
+                AssertIsValidHexString(testVector.KeyedHash);
+                AssertIsValidHexString(testVector.DerivedKeyHash);
             }
 
-            static void AssertIsValidHashBytes(byte[] s)
+            static void AssertIsValidHexString(string s)
             {
                 Assert.NotNull(s);
                 Assert.True(s.Length > 0);
+                var bytes = s.FromHex();
+                Assert.Equal(s.Length / 2, bytes.Length);
             }
         }
     }

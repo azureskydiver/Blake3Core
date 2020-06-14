@@ -19,7 +19,7 @@ namespace Blake3Core.Tests
             var input = GetInputBytes(testVector.InputLength).ToArray();
             var hash = hasher.ComputeHash(input);
             Assert.Equal(64, hash.Length);
-            Assert.Equal(testVector.Hash.Take(hash.Length), hash);
+            Assert.Equal(testVector.Hash.FromHex().Take(hash.Length).ToArray().ToHex(), hash.ToHex());
         }
     }
 }
