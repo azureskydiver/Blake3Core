@@ -9,7 +9,7 @@ namespace Blake3Core.Tests
     public class Correctness
     {
         static IEnumerable<byte> GetInputBytes(int length)
-            => Enumerable.Range(0, length).Select(i => (byte)(i % 252));
+            => Enumerable.Range(0, length).Select(i => (byte)(i % 251));
 
         [Theory]
         [ClassData(typeof(TestVectors))]
