@@ -15,11 +15,11 @@ namespace Blake3Core.Tests
 {
     public class TestVector
     {
-        public string Key { get; set; }
         public int InputLength { get; set; }
         public string Hash { get; set; }
         public string KeyedHash { get; set; }
         public string DerivedKeyHash { get; set; }
+        public string Key { get; set; }
 
         public override string ToString()
         {
@@ -97,11 +97,11 @@ namespace Blake3Core.Tests
                 yield return new object[] {
                     new TestVector()
                     {
-                        Key = key,
                         InputLength = testCase.InputLength,
                         Hash = testCase.Hash,
                         KeyedHash = testCase.KeyedHash,
                         DerivedKeyHash = testCase.DerivedKeyHash,
+                        Key = key,
                     }
                 };
             }
@@ -122,10 +122,10 @@ namespace Blake3Core.Tests
 
                 var testVector = objArray[0] as TestVector;
                 Assert.True(testVector.InputLength >= 0);
-                AssertIsValidHexString(testVector.Key);
                 AssertIsValidHexString(testVector.Hash);
                 AssertIsValidHexString(testVector.KeyedHash);
                 AssertIsValidHexString(testVector.DerivedKeyHash);
+                AssertIsValidHexString(testVector.Key);
             }
 
             static void AssertIsValidHexString(string s)
