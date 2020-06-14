@@ -16,7 +16,7 @@ namespace Blake3Core
         Flag _defaultFlag;
 
         public ulong ChunkCount { get; private set; } = 0;
-        public int Length => _blockCount * Blake3.ChunkLength + _blockLength;
+        public int Length => _blockCount * Blake3.BlockLength + _blockLength;
         public int Needed => Blake3.ChunkLength - Length;
         public bool IsComplete => Length == Blake3.ChunkLength;
 

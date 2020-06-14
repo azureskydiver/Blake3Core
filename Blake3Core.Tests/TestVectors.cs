@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -12,11 +14,29 @@ namespace Blake3Core.Tests
 {
     public class TestVector
     {
-        public string Key { get; set; }
+        public byte[] Key { get; set; }
         public int InputLength { get; set; }
-        public string Hash { get; set; }
-        public string KeyedHash { get; set; }
-        public string DerivedKeyHash { get; set; }
+        public byte[] Hash { get; set; }
+        public byte[] KeyedHash { get; set; }
+        public byte[] DerivedKeyHash { get; set; }
+    }
+
+    public static class StringExtensions
+    {
+        public static byte[] ConvertHexStringToBytes(this string s)
+        {
+            Assert.True(s.Length % 2 == 0);
+            var bytes = new List<byte>(s.Length / 2);
+            var span = s.AsSpan();
+            while (!span.IsEmpty)
+            {
+                if (!byte.TryParse(span.Slice(0, 2), NumberStyles.HexNumber, null, out byte value))
+                    throw new InvalidDataException($"Unexpected data string with byte data.");
+                bytes.Add(value);
+                span = span.Slice(2);
+            }
+            return bytes.ToArray();
+        }
     }
 
     public class TestVectors : IEnumerable<object[]>
@@ -55,16 +75,18 @@ namespace Blake3Core.Tests
                 throw new ArgumentException($"Could not find test vector file at path: {path}");
 
             var jsonTestVectors = JsonSerializer.Deserialize<Vectors>(File.ReadAllText(path));
+            var keyBytes = Encoding.ASCII.GetBytes(jsonTestVectors.Key);
+
             foreach (var testCase in jsonTestVectors.Cases)
             {
                 yield return new object[] {
                     new TestVector()
                     {
-                        Key = jsonTestVectors.Key,
+                        Key = (byte[]) keyBytes.Clone(),
                         InputLength = testCase.InputLength,
-                        Hash = testCase.Hash,
-                        KeyedHash = testCase.KeyedHash,
-                        DerivedKeyHash = testCase.DerivedKeyHash
+                        Hash = testCase.Hash.ConvertHexStringToBytes(),
+                        KeyedHash = testCase.KeyedHash.ConvertHexStringToBytes(),
+                        DerivedKeyHash = testCase.DerivedKeyHash.ConvertHexStringToBytes(),
                     }
                 };
             }
@@ -85,21 +107,17 @@ namespace Blake3Core.Tests
 
                 var testVector = objArray[0] as TestVector;
                 Assert.True(testVector.InputLength >= 0);
-                AssertIsValidHashString(testVector.Key);
-                AssertIsValidHashString(testVector.Hash);
-                AssertIsValidHashString(testVector.KeyedHash);
-                AssertIsValidHashString(testVector.DerivedKeyHash);
+                AssertIsValidHashBytes(testVector.Key);
+                AssertIsValidHashBytes(testVector.Hash);
+                AssertIsValidHashBytes(testVector.KeyedHash);
+                AssertIsValidHashBytes(testVector.DerivedKeyHash);
             }
 
-            static void AssertIsValidHashString(string s)
+            static void AssertIsValidHashBytes(byte[] s)
             {
                 Assert.NotNull(s);
                 Assert.True(s.Length > 0);
-                Assert.True(IsEven(s.Length));
-                Assert.True(s.All(ch => "0123456789ABCDEFabcedef".Contains(ch)));
             }
-
-            static bool IsEven(int n) => n % 2 == 0;
         }
     }
 }

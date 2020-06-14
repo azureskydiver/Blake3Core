@@ -51,7 +51,6 @@ namespace Blake3Core
         {
             _chunkState = new ChunkState(_cv, 0, DefaultFlag);
             _chainingValueStack = new Stack<ChainingValue>();
-            HashValue = new byte[HashSizeInBytes];
         }
 
         Output GetParentOutput(in ChainingValue l, in ChainingValue r)
@@ -63,6 +62,9 @@ namespace Blake3Core
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {
+            if (_chunkState == null)
+                Initialize();
+
             var data = new ReadOnlySpan<byte>(array, ibStart, cbSize);
             while (!data.IsEmpty)
             {
