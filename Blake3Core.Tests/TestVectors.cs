@@ -66,7 +66,7 @@ namespace Blake3Core.Tests
         {
             var sb = new StringBuilder(bytes.Length * 2);
             foreach (var b in bytes)
-                sb.Append(b.ToString("x"));
+                sb.Append(b.ToString("x2"));
             return sb.ToString();
         }
     }
