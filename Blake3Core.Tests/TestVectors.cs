@@ -40,7 +40,12 @@ namespace Blake3Core.Tests
             public List<TestCase> Cases { get; set; }
         }
 
-        public IEnumerator<object[]> GetEnumerator()
+        static Lazy<IEnumerable<object[]>> _testVectors;
+
+        static TestVectors()
+            => _testVectors = new Lazy<IEnumerable<object[]>>(() => LoadTestVectors().ToList());
+
+        static IEnumerable<object[]> LoadTestVectors()
         {
             var path = Path.GetRelativePath(Directory.GetCurrentDirectory(), "test_vectors.json");
             if (!File.Exists(path))
@@ -65,6 +70,7 @@ namespace Blake3Core.Tests
             }
         }
 
+        public IEnumerator<object[]> GetEnumerator() => _testVectors.Value.GetEnumerator();
         IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
 
         [Fact]

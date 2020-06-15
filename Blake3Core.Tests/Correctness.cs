@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using Xunit;
 
@@ -8,8 +9,14 @@ namespace Blake3Core.Tests
 {
     public class Correctness
     {
+        static Dictionary<int, IEnumerable<byte>> _inputBytes = new Dictionary<int, IEnumerable<byte>>();
+
         static IEnumerable<byte> GetInputBytes(int length)
-            => Enumerable.Range(0, length).Select(i => (byte)(i % 251));
+        {
+            if (!_inputBytes.ContainsKey(length))
+                _inputBytes[length] = Enumerable.Range(0, length).Select(i => (byte)(i % 251)).ToList();
+            return _inputBytes[length];
+        }
 
         [Theory]
         [ClassData(typeof(TestVectors))]
@@ -24,28 +31,34 @@ namespace Blake3Core.Tests
             Assert.Equal(expectedHash.Take(hash.Length).ToArray().ToHex(), hash.ToHex());
         }
 
+        void VerifyExtendedOutput(Func<Blake3> create, int inputLength, string expectedHash)
+        {
+            var hasher = create();
+            var input = GetInputBytes(inputLength).ToArray();
+            var hash = hasher.ComputeHash(input);
+
+            Assert.Equal(expectedHash, hasher.GetExtendedOutput()
+                                             .Take(expectedHash.Length / 2)
+                                             .ToArray()
+                                             .ToHex());
+        }
+
         [Theory]
         [ClassData(typeof(TestVectors))]
         void VerifyHashExtendedOutput(TestVector testVector)
         {
-            var hasher = new Blake3();
-            var input = GetInputBytes(testVector.InputLength).ToArray();
-            var hash = hasher.ComputeHash(input);
-            var expectedHash = testVector.Hash.FromHex();
-
-            Assert.Equal(testVector.Hash, hasher.GetExtendedOutput().Take(expectedHash.Length).ToArray().ToHex());
+            VerifyExtendedOutput(() => new Blake3(),
+                                 testVector.InputLength,
+                                 testVector.Hash);
         }
 
         [Theory]
         [ClassData(typeof(TestVectors))]
         void VerifyKeyedHashExtendedOutput(TestVector testVector)
         {
-            var hasher = new Blake3Keyed(testVector.Key.FromHex());
-            var input = GetInputBytes(testVector.InputLength).ToArray();
-            var hash = hasher.ComputeHash(input);
-            var expectedHash = testVector.KeyedHash.FromHex();
-
-            Assert.Equal(testVector.KeyedHash, hasher.GetExtendedOutput().Take(expectedHash.Length).ToArray().ToHex());
+            VerifyExtendedOutput(() => new Blake3Keyed(testVector.Key.FromHex()),
+                                 testVector.InputLength,
+                                 testVector.KeyedHash);
         }
     }
 }
