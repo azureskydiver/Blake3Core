@@ -79,7 +79,7 @@ namespace Blake3Core
             }
 
             var available = Math.Min(data.Length, Blake3.BlockLength - _blockLength);
-            data.Slice(0, available).CopyTo(_block);
+            data.Slice(0, available).CopyTo(_block.AsSpan().Slice(_blockLength));
             _blockLength += available;
         }
     }
