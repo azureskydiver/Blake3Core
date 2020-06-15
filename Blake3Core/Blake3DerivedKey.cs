@@ -7,13 +7,23 @@ namespace Blake3Core
 {
     public class Blake3DerivedKey : Blake3
     {
-        public Blake3DerivedKey(byte[] context, byte[] key)
-            : base(Flag.DeriveKeyMaterial, DeriveKey(context, key))
+        public Blake3DerivedKey(byte[] context)
+            : base(Flag.DeriveKeyMaterial, DeriveKey(context))
         {
         }
 
-        public Blake3DerivedKey(ReadOnlySpan<byte> context, ReadOnlySpan<byte> key)
-            : this(context.ToArray(), key.ToArray())
+        public Blake3DerivedKey(ReadOnlySpan<byte> context)
+            : this(context.ToArray())
+        {
+        }
+
+        public Blake3DerivedKey(string context, Encoding encoding)
+            : this(encoding.GetBytes(context))
+        {
+        }
+
+        public Blake3DerivedKey(string context)
+            : this(context, Encoding.Default)
         {
         }
 
@@ -23,10 +33,10 @@ namespace Blake3Core
                 return hashAlgorithm.ComputeHash(message);
         }
 
-        static byte[] DeriveKey(byte[] context, byte[] key)
+        static byte[] DeriveKey(byte[] context)
         {
             var keyContext = ComputeHash(Flag.DeriveKeyContext, IV, context);
-            return ComputeHash(Flag.DeriveKeyMaterial, keyContext.AsUints(), key);
+            return keyContext.AsSpan().Slice(0, 8 * sizeof(uint)).ToArray();
         }
     }
 }

@@ -60,5 +60,15 @@ namespace Blake3Core.Tests
                                  testVector.InputLength,
                                  testVector.KeyedHash);
         }
+
+        [Theory]
+        [ClassData(typeof(TestVectors))]
+        void VerifyDerivedKeyExtendedOutput(TestVector testVector)
+        {
+            const string context = "BLAKE3 2019-12-27 16:29:52 test vectors context";
+            VerifyExtendedOutput(() => new Blake3DerivedKey(context, Encoding.ASCII),
+                                 testVector.InputLength,
+                                 testVector.DerivedKeyHash);
+        }
     }
 }

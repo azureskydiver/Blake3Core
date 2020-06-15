@@ -65,5 +65,11 @@ namespace Blake3Core.Tests
             else
                 action();
         }
+
+        [Fact]
+        void CanCreateBlake3DerivedKey()
+        {
+            var hash = new Blake3DerivedKey("Blake3Core");
+        }
     }
 }
