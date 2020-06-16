@@ -16,8 +16,7 @@ namespace Blake3Core
                                      Flag flag = Flag.None)
         {
             Span<uint> message = stackalloc uint[16];
-            for (int i = 0; i < 16; i++)
-                message[i] = block[i];
+            block.CopyTo(message);
 
             State state = new State(cv, counter, blockLen, flag);
             var s = state.AsWritableUints();
@@ -60,6 +59,7 @@ namespace Blake3Core
             G(s, 3, 4, 9, 14, m[14], m[15]);
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         static void G(Span<uint> s, int a, int b, int c, int d, uint mx, uint my)
         {
             unchecked
