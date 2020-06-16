@@ -9,53 +9,68 @@ namespace Blake3Core
 {
     static class Compressor
     {
-        public static State Compress(in ChainingValue cv,
-                                     ReadOnlySpan<uint> block,
-                                     ulong counter = 0,
-                                     int blockLen = Blake3.BlockLength,
-                                     Flag flag = Flag.None)
+        public static unsafe State Compress(in ChainingValue cv,
+                                            ReadOnlySpan<uint> block,
+                                            ulong counter = 0,
+                                            int blockLen = Blake3.BlockLength,
+                                            Flag flag = Flag.None)
         {
-            Span<uint> message = stackalloc uint[16];
-            block.CopyTo(message);
-
             State state = new State(cv, counter, blockLen, flag);
-            var s = state.AsWritableUints();
 
-            Round(s, message);
-            Permute(message);
-            Round(s, message);
-            Permute(message);
-            Round(s, message);
-            Permute(message);
-            Round(s, message);
-            Permute(message);
-            Round(s, message);
-            Permute(message);
-            Round(s, message);
-            Permute(message);
-            Round(s, message);
-
-            unsafe
+            uint* m = stackalloc uint[16];
+            fixed(uint * b = block)
             {
-                fixed (uint * hashes = &cv.h[0])
-                {
-                    uint* lo = &state.s[0];
-                    uint* hi = &lo[8];
-                    uint* hi2 = &lo[8];
-                    uint* h = hashes;
+                m[ 0] = b[ 0];
+                m[ 1] = b[ 1];
+                m[ 2] = b[ 2];
+                m[ 3] = b[ 3];
+                m[ 4] = b[ 4];
+                m[ 5] = b[ 5];
+                m[ 6] = b[ 6];
+                m[ 7] = b[ 7];
+                m[ 8] = b[ 8];
+                m[ 9] = b[ 9];
+                m[10] = b[10];
+                m[11] = b[11];
+                m[12] = b[12];
+                m[13] = b[13];
+                m[14] = b[14];
+                m[15] = b[15];
+            }
 
-                    for(int i = 0; i < 8; i++)
-                    {
-                        *lo++ ^= *hi++;
-                        *hi2++ ^= *h++;
-                    }
+            uint* s = &state.s[0];
+            Round(s, m);
+            Permute(m);
+            Round(s, m);
+            Permute(m);
+            Round(s, m);
+            Permute(m);
+            Round(s, m);
+            Permute(m);
+            Round(s, m);
+            Permute(m);
+            Round(s, m);
+            Permute(m);
+            Round(s, m);
+
+            fixed (uint * hashes = &cv.h[0])
+            {
+                uint* lo = &state.s[0];
+                uint* hi = &lo[8];
+                uint* hi2 = &lo[8];
+                uint* h = hashes;
+
+                for(int i = 0; i < 8; i++)
+                {
+                    *lo++ ^= *hi++;
+                    *hi2++ ^= *h++;
                 }
             }
 
             return state;
         }
 
-        static void Round(Span<uint> s, ReadOnlySpan<uint> m)
+        static unsafe void Round(uint * s, uint* m)
         {
             // Mix the columns.
             G(s, 0, 4, 8, 12, m[0], m[1]);
@@ -71,7 +86,7 @@ namespace Blake3Core
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        static void G(Span<uint> s, int a, int b, int c, int d, uint mx, uint my)
+        static unsafe void G(uint * s, int a, int b, int c, int d, uint mx, uint my)
         {
             unchecked
             {
@@ -96,33 +111,27 @@ namespace Blake3Core
             }
         }
 
-        static void Permute(Span<uint> message)
+        static unsafe void Permute(uint* m)
         {
-            Span<uint> old = stackalloc uint[16];
-            message.CopyTo(old);
+            uint* old = stackalloc uint[16];
+            Buffer.MemoryCopy(m, old, 16 * sizeof(uint), 16 * sizeof(uint));
 
-            unsafe
-            {
-                fixed (uint* src = old, m = message)
-                {
-                    m[ 0] = src[ 2];
-                    m[ 1] = src[ 6];
-                    m[ 2] = src[ 3];
-                    m[ 3] = src[10];
-                    m[ 4] = src[ 7];
-                    m[ 5] = src[ 0];
-                    m[ 6] = src[ 4];
-                    m[ 7] = src[13];
-                    m[ 8] = src[ 1];
-                    m[ 9] = src[11];
-                    m[10] = src[12];
-                    m[11] = src[ 5];
-                    m[12] = src[ 9];
-                    m[13] = src[14];
-                    m[14] = src[15];
-                    m[15] = src[ 8];
-                }
-            }
+            m[ 0] = old[ 2];
+            m[ 1] = old[ 6];
+            m[ 2] = old[ 3];
+            m[ 3] = old[10];
+            m[ 4] = old[ 7];
+            m[ 5] = old[ 0];
+            m[ 6] = old[ 4];
+            m[ 7] = old[13];
+            m[ 8] = old[ 1];
+            m[ 9] = old[11];
+            m[10] = old[12];
+            m[11] = old[ 5];
+            m[12] = old[ 9];
+            m[13] = old[14];
+            m[14] = old[15];
+            m[15] = old[ 8];
         }
     }
 }
