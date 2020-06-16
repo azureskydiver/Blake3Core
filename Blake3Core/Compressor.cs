@@ -96,12 +96,21 @@ namespace Blake3Core
             }
         }
 
-        static void Permute(Span<uint> m)
+        static void Permute(Span<uint> message)
         {
             Span<uint> old = stackalloc uint[16];
-            m.CopyTo(old);
-            for (int i = 0; i < 16; i++)
-                m[i] = old[Permutation[i]];
+            message.CopyTo(old);
+
+            unsafe
+            {
+                fixed (int* perm = Permutation)
+                fixed (uint* src = old, m = message)
+                {
+                    uint* dst = m;
+                    for (int i = 0; i < 16; i++)
+                        *dst++ = src[perm[i]];
+                }
+            }
         }
 
         static readonly int[] Permutation = { 2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8 };
