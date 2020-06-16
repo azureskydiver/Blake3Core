@@ -35,12 +35,23 @@ namespace Blake3Core
             Permute(message);
             Round(s, message);
 
-            var h = cv.AsUints();
-            for (int i = 0; i < 8; i++)
+            unsafe
             {
-                s[i] ^= s[i + 8];
-                s[i + 8] ^= h[i];
+                fixed (uint * hashes = &cv.h[0])
+                {
+                    uint* lo = &state.s[0];
+                    uint* hi = &lo[8];
+                    uint* hi2 = &lo[8];
+                    uint* h = hashes;
+
+                    for(int i = 0; i < 8; i++)
+                    {
+                        *lo++ ^= *hi++;
+                        *hi2++ ^= *h++;
+                    }
+                }
             }
+
             return state;
         }
 
