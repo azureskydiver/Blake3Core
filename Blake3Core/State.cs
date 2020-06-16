@@ -19,14 +19,18 @@ namespace Blake3Core
         {
             this.cv = cv;
 
-            s[8] = Blake3.IV[0];
-            s[9] = Blake3.IV[1];
-            s[10] = Blake3.IV[2];
-            s[11] = Blake3.IV[3];
-            s[12] = (uint)counter;
-            s[13] = (uint)(counter >> 32);
-            s[14] = (uint)blockLen;
-            s[15] = (uint)flag;
+            fixed (uint* s8 = &s[8])
+            {
+                uint* dst = s8;
+                *dst++ = Blake3.IV0;
+                *dst++ = Blake3.IV1;
+                *dst++ = Blake3.IV2;
+                *dst++ = Blake3.IV3;
+                *dst++ = (uint)counter;
+                *dst++ = (uint)(counter >> 32);
+                *dst++ = (uint)blockLen;
+                *dst++ = (uint)flag;
+            }
         }
 
         public ReadOnlySpan<uint> AsUints()

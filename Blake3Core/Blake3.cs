@@ -15,8 +15,13 @@ namespace Blake3Core
         internal const int ChunkLength = 1024;
         internal const int BlockLength = 16 * sizeof(uint);
 
+        internal const uint IV0 = 0x6A09E667;
+        internal const uint IV1 = 0xBB67AE85;
+        internal const uint IV2 = 0x3C6EF372;
+        internal const uint IV3 = 0xA54FF53A;
+
         internal static readonly uint [] IV =
-            { 0x6A09E667, 0xBB67AE85, 0x3C6EF372, 0xA54FF53A, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19 };
+            { IV0, IV1, IV2, IV3, 0x510E527F, 0x9B05688C, 0x1F83D9AB, 0x5BE0CD19 };
 
         protected private Flag DefaultFlag;
 
