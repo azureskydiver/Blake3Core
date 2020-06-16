@@ -105,22 +105,22 @@ namespace Blake3Core
             {
                 fixed (uint* src = old, m = message)
                 {
-                    m[ 0] = src[2];
-                    m[ 1] = src[6];
-                    m[ 2] = src[3];
+                    m[ 0] = src[ 2];
+                    m[ 1] = src[ 6];
+                    m[ 2] = src[ 3];
                     m[ 3] = src[10];
-                    m[ 4] = src[7];
-                    m[ 5] = src[0];
-                    m[ 6] = src[4];
+                    m[ 4] = src[ 7];
+                    m[ 5] = src[ 0];
+                    m[ 6] = src[ 4];
                     m[ 7] = src[13];
-                    m[ 8] = src[1];
+                    m[ 8] = src[ 1];
                     m[ 9] = src[11];
                     m[10] = src[12];
-                    m[11] = src[5];
-                    m[12] = src[9];
+                    m[11] = src[ 5];
+                    m[12] = src[ 9];
                     m[13] = src[14];
                     m[14] = src[15];
-                    m[15] = src[8];
+                    m[15] = src[ 8];
                 }
             }
         }
