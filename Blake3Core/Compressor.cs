@@ -78,8 +78,7 @@ namespace Blake3Core
         static void Permute(Span<uint> m)
         {
             Span<uint> old = stackalloc uint[16];
-            for (int i = 0; i < 16; i++)
-                old[i] = m[i];
+            m.CopyTo(old);
             for (int i = 0; i < 16; i++)
                 m[i] = old[Permutation[i]];
         }
