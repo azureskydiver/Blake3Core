@@ -43,17 +43,6 @@ namespace Blake3Core
             ChunkCount = chunkCount;
         }
 
-        public void ZeroFillRestOfChunk()
-        {
-            var zeroesNeeded = Blake3.ChunkLength - Length;
-            Debug.Assert(zeroesNeeded >= 0);
-            if (zeroesNeeded > 0)
-            {
-                var buffer = new byte[zeroesNeeded];
-                Update(buffer);
-            }
-        }
-
         void CompressBlock(ReadOnlySpan<byte> block)
         {
             var isStart = _blockCount == 0 ? Flag.ChunkStart : Flag.None;
