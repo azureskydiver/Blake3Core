@@ -103,16 +103,27 @@ namespace Blake3Core
 
             unsafe
             {
-                fixed (int* perm = Permutation)
                 fixed (uint* src = old, m = message)
                 {
                     uint* dst = m;
-                    for (int i = 0; i < 16; i++)
-                        *dst++ = src[perm[i]];
+                    *dst++ = src[2];
+                    *dst++ = src[6];
+                    *dst++ = src[3];
+                    *dst++ = src[10];
+                    *dst++ = src[7];
+                    *dst++ = src[0];
+                    *dst++ = src[4];
+                    *dst++ = src[13];
+                    *dst++ = src[1];
+                    *dst++ = src[11];
+                    *dst++ = src[12];
+                    *dst++ = src[5];
+                    *dst++ = src[9];
+                    *dst++ = src[14];
+                    *dst++ = src[15];
+                    *dst++ = src[8];
                 }
             }
         }
-
-        static readonly int[] Permutation = { 2, 6, 3, 10, 7, 0, 4, 13, 1, 11, 12, 5, 9, 14, 15, 8 };
     }
 }
