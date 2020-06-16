@@ -9,12 +9,23 @@ namespace Blake3Core
 {
     class Output
     {
-        public ChainingValue ChainingValue { get; }
+        readonly ChainingValue _cv;
+        readonly uint[] _block;
+        readonly int _blockLen;
+        readonly ulong _counter;
+        readonly Flag _flag;
 
-        ChainingValue _cv;
-        uint[] _block;
-        int _blockLen;
-        Flag _flag;
+        public ChainingValue ChainingValue
+        {
+            get
+            {
+                return Compressor.Compress(cv: _cv,
+                                           block: _block,
+                                           counter: _counter,
+                                           blockLen: _blockLen,
+                                           flag: _flag).cv;
+            }
+        }
 
         public Output(in ChainingValue cv,
                       ReadOnlySpan<uint> block,
@@ -24,14 +35,9 @@ namespace Blake3Core
         {
             _cv = cv;
             _block = block.ToArray();
+            _counter = counter;
             _blockLen = blockLen;
             _flag = flag;
-
-            ChainingValue = Compressor.Compress(cv: _cv,
-                                                block: _block,
-                                                counter: counter,
-                                                blockLen: _blockLen,
-                                                flag: _flag).cv;
         }
 
         public IEnumerable<byte> GetRootBytes()
