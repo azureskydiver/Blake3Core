@@ -64,14 +64,24 @@ namespace Blake3Core
         {
             unchecked
             {
-                s[a] = s[a] + s[b] + mx;
-                s[d] = (s[d] ^ s[a]).RotateRight(16);
-                s[c] = s[c] + s[d];
-                s[b] = (s[b] ^ s[c]).RotateRight(12);
-                s[a] = s[a] + s[b] + my;
-                s[d] = (s[d] ^ s[a]).RotateRight(8);
-                s[c] = s[c] + s[d];
-                s[b] = (s[b] ^ s[c]).RotateRight(7);
+                uint sa = s[a];
+                uint sb = s[b];
+                uint sc = s[c];
+                uint sd = s[d];
+
+                sa += sb + mx;
+                sd = (sd ^ sa).RotateRight(16);
+                sc += sd;
+                sb = (sb ^ sc).RotateRight(12);
+                sa += sb + my;
+                sd = (sd ^ sa).RotateRight(8);
+                sc += sd;
+                sb = (sb ^ sc).RotateRight(7);
+
+                s[a] = sa;
+                s[b] = sb;
+                s[c] = sc;
+                s[d] = sd;
             }
         }
 
