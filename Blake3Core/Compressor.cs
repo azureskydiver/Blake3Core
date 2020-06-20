@@ -39,14 +39,17 @@ namespace Blake3Core
                 m[15] = b[15];
             }
 
+            uint* scheduledMessages = stackalloc uint[16 * 7];
+            ScheduleMessages(scheduledMessages, m);
+
             uint* s = &state.s[0];
-            Round(s, m, 0);
-            Round(s, m, 1);
-            Round(s, m, 2);
-            Round(s, m, 3);
-            Round(s, m, 4);
-            Round(s, m, 5);
-            Round(s, m, 6);
+            Round(s, &scheduledMessages[0 * 16]);
+            Round(s, &scheduledMessages[1 * 16]);
+            Round(s, &scheduledMessages[2 * 16]);
+            Round(s, &scheduledMessages[3 * 16]);
+            Round(s, &scheduledMessages[4 * 16]);
+            Round(s, &scheduledMessages[5 * 16]);
+            Round(s, &scheduledMessages[6 * 16]);
 
             fixed (uint * hashes = &cv.h[0])
             {
@@ -65,22 +68,32 @@ namespace Blake3Core
             return state;
         }
 
-        static unsafe void Round(uint * s, uint* m, int round)
+        static unsafe void ScheduleMessages(uint *scheduledMessages, uint* m)
         {
-            fixed(uint * schedule = &MessageSchedule[round][0])
+            uint* dst = scheduledMessages;
+            for (int i = 0; i < 7; i++)
             {
-                // Mix the columns.
-                G(s, 0, 4,  8, 12, m[schedule[ 0]], m[schedule[ 1]]);
-                G(s, 1, 5,  9, 13, m[schedule[ 2]], m[schedule[ 3]]);
-                G(s, 2, 6, 10, 14, m[schedule[ 4]], m[schedule[ 5]]);
-                G(s, 3, 7, 11, 15, m[schedule[ 6]], m[schedule[ 7]]);
-
-                // Mix the diagonals.
-                G(s, 0, 5, 10, 15, m[schedule[ 8]], m[schedule[ 9]]);
-                G(s, 1, 6, 11, 12, m[schedule[10]], m[schedule[11]]);
-                G(s, 2, 7,  8, 13, m[schedule[12]], m[schedule[13]]);
-                G(s, 3, 4,  9, 14, m[schedule[14]], m[schedule[15]]);
+                fixed(uint * schedule = &MessageSchedule[i][0])
+                {
+                    for (int j = 0; j < 16; j++)
+                        *dst++ = m[schedule[j]];
+                }
             }
+        }
+
+        static unsafe void Round(uint * s, uint* m)
+        {
+            // Mix the columns.
+            G(s, 0, 4,  8, 12, m[ 0], m[ 1]);
+            G(s, 1, 5,  9, 13, m[ 2], m[ 3]);
+            G(s, 2, 6, 10, 14, m[ 4], m[ 5]);
+            G(s, 3, 7, 11, 15, m[ 6], m[ 7]);
+
+            // Mix the diagonals.
+            G(s, 0, 5, 10, 15, m[ 8], m[ 9]);
+            G(s, 1, 6, 11, 12, m[10], m[11]);
+            G(s, 2, 7,  8, 13, m[12], m[13]);
+            G(s, 3, 4,  9, 14, m[14], m[15]);
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
