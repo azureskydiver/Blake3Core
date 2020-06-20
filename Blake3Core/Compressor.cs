@@ -75,8 +75,24 @@ namespace Blake3Core
             {
                 fixed(uint * schedule = &MessageSchedule[i][0])
                 {
-                    for (int j = 0; j < 16; j++)
-                        *dst++ = m[schedule[j]];
+                    dst[ 0] = m[schedule[ 0]];
+                    dst[ 1] = m[schedule[ 1]];
+                    dst[ 2] = m[schedule[ 2]];
+                    dst[ 3] = m[schedule[ 3]];
+                    dst[ 4] = m[schedule[ 4]];
+                    dst[ 5] = m[schedule[ 5]];
+                    dst[ 6] = m[schedule[ 6]];
+                    dst[ 7] = m[schedule[ 7]];
+                    dst[ 8] = m[schedule[ 8]];
+                    dst[ 9] = m[schedule[ 9]];
+                    dst[10] = m[schedule[10]];
+                    dst[11] = m[schedule[11]];
+                    dst[12] = m[schedule[12]];
+                    dst[13] = m[schedule[13]];
+                    dst[14] = m[schedule[14]];
+                    dst[15] = m[schedule[15]];
+
+                    dst += 16;
                 }
             }
         }
