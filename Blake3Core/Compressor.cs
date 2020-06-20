@@ -39,17 +39,17 @@ namespace Blake3Core
                 m[15] = b[15];
             }
 
-            uint* scheduledMessages = stackalloc uint[16 * 7];
+            uint* scheduledMessages = stackalloc uint[16 * 6];
             ScheduleMessages(scheduledMessages, m);
 
             uint* s = &state.s[0];
+            Round(s, m);
             Round(s, &scheduledMessages[0 * 16]);
             Round(s, &scheduledMessages[1 * 16]);
             Round(s, &scheduledMessages[2 * 16]);
             Round(s, &scheduledMessages[3 * 16]);
             Round(s, &scheduledMessages[4 * 16]);
             Round(s, &scheduledMessages[5 * 16]);
-            Round(s, &scheduledMessages[6 * 16]);
 
             fixed (uint * hashes = &cv.h[0])
             {
@@ -71,7 +71,7 @@ namespace Blake3Core
         static unsafe void ScheduleMessages(uint *scheduledMessages, uint* m)
         {
             uint* dst = scheduledMessages;
-            for (int i = 0; i < 7; i++)
+            for (int i = 0; i < 6; i++)
             {
                 fixed(uint * schedule = &MessageSchedule[i][0])
                 {
@@ -138,43 +138,19 @@ namespace Blake3Core
             }
         }
 
-        static unsafe void Permute(uint* m)
-        {
-            uint* old = stackalloc uint[16];
-            Buffer.MemoryCopy(m, old, 16 * sizeof(uint), 16 * sizeof(uint));
-
-            m[ 0] = old[ 2];
-            m[ 1] = old[ 6];
-            m[ 2] = old[ 3];
-            m[ 3] = old[10];
-            m[ 4] = old[ 7];
-            m[ 5] = old[ 0];
-            m[ 6] = old[ 4];
-            m[ 7] = old[13];
-            m[ 8] = old[ 1];
-            m[ 9] = old[11];
-            m[10] = old[12];
-            m[11] = old[ 5];
-            m[12] = old[ 9];
-            m[13] = old[14];
-            m[14] = old[15];
-            m[15] = old[ 8];
-        }
-
         static Compressor()
         {
             BuildMessageSchedule();
         }
 
-        static readonly uint[][] MessageSchedule = new uint[7][];
+        static readonly uint[][] MessageSchedule = new uint[6][];
 
         static void BuildMessageSchedule()
         {
-            MessageSchedule[0] = Enumerable.Range(0, 16).Select(i => (uint)i).ToArray();
-            for(int i = 1; i < 7; i++)
+            var old = Enumerable.Range(0, 16).Select(i => (uint)i).ToArray();
+            for(int i = 0; i < 6; i++)
             {
                 var m = new uint[16];
-                var old = MessageSchedule[i - 1];
                 MessageSchedule[i] = m;
 
                 m[ 0] = old[ 2];
@@ -193,6 +169,8 @@ namespace Blake3Core
                 m[13] = old[14];
                 m[14] = old[15];
                 m[15] = old[ 8];
+
+                old = m;
             }
         }
     }
