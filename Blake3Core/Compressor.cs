@@ -9,6 +9,86 @@ using System.Text;
 
 namespace Blake3Core
 {
+    class RoundState
+    {
+        public Vector<uint> sa;
+        public Vector<uint> sb;
+        public Vector<uint> sc;
+        public Vector<uint> sd;
+
+        public unsafe RoundState(uint* s)
+        {
+            sa = new Vector<uint>(stackalloc uint[] { s[ 0], s[ 1], s[ 2], s[ 3] });
+            sb = new Vector<uint>(stackalloc uint[] { s[ 4], s[ 5], s[ 6], s[ 7] });
+            sc = new Vector<uint>(stackalloc uint[] { s[ 8], s[ 9], s[10], s[11] });
+            sd = new Vector<uint>(stackalloc uint[] { s[12], s[13], s[14], s[15] });
+        }
+
+        public unsafe void Round(uint* m)
+        {
+            G(new Vector<uint>(stackalloc uint[] { m[0], m[2], m[4], m[6] }),
+              new Vector<uint>(stackalloc uint[] { m[1], m[3], m[5], m[7] }));
+            Diagonalize();
+            G(new Vector<uint>(stackalloc uint[] { m[8], m[10], m[12], m[14] }),
+              new Vector<uint>(stackalloc uint[] { m[9], m[11], m[13], m[15] }));
+            Undiagonalize();
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        void G(in Vector<uint> mx, in Vector<uint> my)
+        {
+            sa += sb + mx;
+            sd = RotateRight(sd ^ sa, 16);
+            sc += sd;
+            sb = RotateRight(sb ^ sc, 12);
+            sa += sb + my;
+            sd = RotateRight(sd ^ sa, 8);
+            sc += sd;
+            sb = RotateRight(sb ^ sc, 7);
+        }
+
+        void Diagonalize()
+        {
+            //$ NYI
+            var a = new Vector<uint>(stackalloc uint[] { sa[0], sa[1], sa[2], sa[3] });
+            var b = new Vector<uint>(stackalloc uint[] { sb[0], sb[1], sb[2], sb[3] });
+            var c = new Vector<uint>(stackalloc uint[] { sc[0], sc[1], sc[2], sc[3] });
+            var d = new Vector<uint>(stackalloc uint[] { sd[0], sd[1], sd[2], sd[3] });
+
+            sa = a;
+            sb = b;
+            sc = c;
+            sd = d;
+        }
+
+        void Undiagonalize()
+        {
+            //$ NYI
+            var a = new Vector<uint>(stackalloc uint[] { sa[0], sa[1], sa[2], sa[3] });
+            var b = new Vector<uint>(stackalloc uint[] { sb[0], sb[1], sb[2], sb[3] });
+            var c = new Vector<uint>(stackalloc uint[] { sc[0], sc[1], sc[2], sc[3] });
+            var d = new Vector<uint>(stackalloc uint[] { sd[0], sd[1], sd[2], sd[3] });
+
+            sa = a;
+            sb = b;
+            sc = c;
+            sd = d;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        unsafe Vector<uint> RotateRight(in Vector<uint> v, int count)
+        {
+            Span<uint> newValues = stackalloc uint[]
+            {
+                v[0].RotateRight(count),
+                v[1].RotateRight(count),
+                v[2].RotateRight(count),
+                v[3].RotateRight(count),
+            };
+            return new Vector<uint>(newValues);
+        }
+    }
+
     static class Compressor
     {
         public static unsafe State Compress(in ChainingValue cv,
@@ -21,18 +101,20 @@ namespace Blake3Core
             uint* s = &state.s[0];
             uint* scheduledMessages = stackalloc uint[16 * 6];
 
+            var roundState = new RoundState(state.s);
+
             fixed (uint * m = block)
             {
                 ScheduleMessages(scheduledMessages, m);
-                Round(s, m);
+                roundState.Round(m);
             }
 
-            Round(s, &scheduledMessages[0 * 16]);
-            Round(s, &scheduledMessages[1 * 16]);
-            Round(s, &scheduledMessages[2 * 16]);
-            Round(s, &scheduledMessages[3 * 16]);
-            Round(s, &scheduledMessages[4 * 16]);
-            Round(s, &scheduledMessages[5 * 16]);
+            roundState.Round(&scheduledMessages[0 * 16]);
+            roundState.Round(&scheduledMessages[1 * 16]);
+            roundState.Round(&scheduledMessages[2 * 16]);
+            roundState.Round(&scheduledMessages[3 * 16]);
+            roundState.Round(&scheduledMessages[4 * 16]);
+            roundState.Round(&scheduledMessages[5 * 16]);
 
             fixed (uint * hashes = &cv.h[0])
             {
