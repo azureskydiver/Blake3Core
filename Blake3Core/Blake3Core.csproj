@@ -2,6 +2,18 @@
 
   <PropertyGroup>
     <TargetFramework>netstandard2.1</TargetFramework>
+    <PackageLicenseFile></PackageLicenseFile>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Authors>code.herder</Authors>
+    <Version>0.1.0</Version>
+    <Description>.NET Standard implementation of the Blake3 hashing algorithm exposed as a standard .NET HashAlgorithm.
+</Description>
+    <Copyright>(c) 2020</Copyright>
+    <Company>AXF Software</Company>
+    <PackageProjectUrl>https://github.com/azureskydiver/Blake3Core</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/azureskydiver/Blake3Core</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
