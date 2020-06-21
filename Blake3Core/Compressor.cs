@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
@@ -17,33 +18,15 @@ namespace Blake3Core
                                             Flag flag = Flag.None)
         {
             State state = new State(cv, counter, blockLen, flag);
+            uint* s = &state.s[0];
+            uint* scheduledMessages = stackalloc uint[16 * 6];
 
-            uint* m = stackalloc uint[16];
-            fixed(uint * b = block)
+            fixed (uint * m = block)
             {
-                m[ 0] = b[ 0];
-                m[ 1] = b[ 1];
-                m[ 2] = b[ 2];
-                m[ 3] = b[ 3];
-                m[ 4] = b[ 4];
-                m[ 5] = b[ 5];
-                m[ 6] = b[ 6];
-                m[ 7] = b[ 7];
-                m[ 8] = b[ 8];
-                m[ 9] = b[ 9];
-                m[10] = b[10];
-                m[11] = b[11];
-                m[12] = b[12];
-                m[13] = b[13];
-                m[14] = b[14];
-                m[15] = b[15];
+                ScheduleMessages(scheduledMessages, m);
+                Round(s, m);
             }
 
-            uint* scheduledMessages = stackalloc uint[16 * 6];
-            ScheduleMessages(scheduledMessages, m);
-
-            uint* s = &state.s[0];
-            Round(s, m);
             Round(s, &scheduledMessages[0 * 16]);
             Round(s, &scheduledMessages[1 * 16]);
             Round(s, &scheduledMessages[2 * 16]);
