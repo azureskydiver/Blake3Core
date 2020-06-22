@@ -106,13 +106,17 @@ namespace Blake3Core
                 uint sd = s[d];
 
                 sa += sb + mx;
-                sd = (sd ^ sa).RotateRight(16);
+                sd ^= sa;
+                sd.RotateRightByRef(16);
                 sc += sd;
-                sb = (sb ^ sc).RotateRight(12);
+                sb ^= sc;
+                sb.RotateRightByRef(12);
                 sa += sb + my;
-                sd = (sd ^ sa).RotateRight(8);
+                sd ^= sa;
+                sd.RotateRightByRef(8);
                 sc += sd;
-                sb = (sb ^ sc).RotateRight(7);
+                sb ^= sc;
+                sb.RotateRightByRef(7);
 
                 s[a] = sa;
                 s[b] = sb;
