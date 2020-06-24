@@ -46,10 +46,11 @@ namespace Blake3Core
         void CompressBlock(ReadOnlySpan<byte> block)
         {
             var isStart = _blockCount == 0 ? Flag.ChunkStart : Flag.None;
-            _cv = Compressor.Compress(cv: _cv,
-                                      block: block.AsLittleEndianUints(),
-                                      counter: ChunkCount,
-                                      flag: _defaultFlag | isStart).cv;
+            var state = new State(cv: _cv,
+                                  counter: ChunkCount,
+                                  flag: _defaultFlag | isStart);
+            state.Compress(block.AsLittleEndianUints());
+            _cv = state.cv;
             _blockCount++;
             _blockLength = 0;
         }

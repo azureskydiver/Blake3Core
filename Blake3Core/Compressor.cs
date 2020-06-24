@@ -11,16 +11,10 @@ namespace Blake3Core
 {
     static class Compressor
     {
-        public static unsafe State Compress(in ChainingValue cv,
-                                            ReadOnlySpan<uint> block,
-                                            ulong counter = 0,
-                                            int blockLen = Blake3.BlockLength,
-                                            Flag flag = Flag.None)
+        public static unsafe void Compress(ReadOnlySpan<uint> block,
+                                           uint* s)
         {
-            State state = new State(cv, counter, blockLen, flag);
-            uint* s = &state.s[0];
-
-            fixed (uint * m = block)
+            fixed (uint* m = block)
             {
                 Round(s, m, 0);
                 Round(s, m, 1);
@@ -39,20 +33,6 @@ namespace Blake3Core
             s[5] ^= s[13];
             s[6] ^= s[14];
             s[7] ^= s[15];
-
-            fixed (uint * h = &cv.h[0])
-            {
-                s[ 8] ^= h[0];
-                s[ 9] ^= h[1];
-                s[10] ^= h[2];
-                s[11] ^= h[3];
-                s[12] ^= h[4];
-                s[13] ^= h[5];
-                s[14] ^= h[6];
-                s[15] ^= h[7];
-            }
-
-            return state;
         }
 
         static unsafe void Round(uint * s, uint* m, int round)

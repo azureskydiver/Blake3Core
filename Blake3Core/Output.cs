@@ -19,11 +19,12 @@ namespace Blake3Core
         {
             get
             {
-                return Compressor.Compress(cv: _cv,
-                                           block: _block,
-                                           counter: _counter,
-                                           blockLen: _blockLen,
-                                           flag: _flag).cv;
+                var state = new State(cv: _cv,
+                                      counter: _counter,
+                                      blockLen: _blockLen,
+                                      flag: _flag);
+                state.Compress(_block);
+                return state.cv;
             }
         }
 
@@ -45,12 +46,11 @@ namespace Blake3Core
             ulong counter = 0;
             while (true)
             {
-                var state = Compressor.Compress(cv: _cv,
-                                                block: _block,
-                                                counter: counter,
-                                                blockLen: _blockLen,
-                                                flag: _flag | Flag.Root);
-
+                var state = new State(cv: _cv,
+                                      counter: counter,
+                                      blockLen: _blockLen,
+                                      flag: _flag | Flag.Root);
+                state.CompressXof(_cv, _block);
                 var stateBytes = state.AsBytes().ToArray();
                 foreach(var b in stateBytes)
                     yield return b;

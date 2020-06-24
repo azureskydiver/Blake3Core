@@ -33,6 +33,32 @@ namespace Blake3Core
             }
         }
 
+        public void Compress(ReadOnlySpan<uint> block)
+        {
+            fixed(uint* state = s)
+                Compressor.Compress(block, state);
+        }
+
+        public void CompressXof(in ChainingValue cv, ReadOnlySpan<uint> block)
+        {
+            fixed (uint* state = s)
+            {
+                Compressor.Compress(block, state);
+
+                fixed (uint* h = &cv.h[0])
+                {
+                    s[ 8] ^= h[0];
+                    s[ 9] ^= h[1];
+                    s[10] ^= h[2];
+                    s[11] ^= h[3];
+                    s[12] ^= h[4];
+                    s[13] ^= h[5];
+                    s[14] ^= h[6];
+                    s[15] ^= h[7];
+                }
+            }
+        }
+
         public ReadOnlySpan<uint> AsUints()
         {
             fixed (uint * states = s)
