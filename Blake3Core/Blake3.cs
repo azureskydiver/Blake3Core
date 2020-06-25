@@ -87,7 +87,7 @@ namespace Blake3Core
             {
                 if (_chunkState.IsComplete)
                 {
-                    AddChunkChainingValue(_chunkState.Output.ChainingValue);
+                    AddChunkChainingValue(_chunkState.Output.ChainingValue, _chunkState.ChunkCount + 1);
                     _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
                 }
 
@@ -96,9 +96,8 @@ namespace Blake3Core
                 data = data.Slice(available);
             }
 
-            void AddChunkChainingValue(ChainingValue cv)
+            void AddChunkChainingValue(ChainingValue cv, ulong chunkCount)
             {
-                var chunkCount = _chunkState.ChunkCount + 1;
                 while ((chunkCount & 1) == 0)
                 {
                     cv = GetParentOutput(_chainingValueStack.Pop(), cv).ChainingValue;
@@ -111,7 +110,7 @@ namespace Blake3Core
             {
                 if (_chunkState.IsComplete)
                 {
-                    AddChunkChainingValue(_chunkState.Output.ChainingValue);
+                    AddChunkChainingValue(_chunkState.Output.ChainingValue, _chunkState.ChunkCount + 1);
                     _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
                 }
 
@@ -124,7 +123,7 @@ namespace Blake3Core
 
                 if (!data.IsEmpty && _chunkState.IsComplete)
                 {
-                    AddChunkChainingValue(_chunkState.Output.ChainingValue);
+                    AddChunkChainingValue(_chunkState.Output.ChainingValue, _chunkState.ChunkCount + 1);
                     _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
                 }
                 return data;
@@ -151,14 +150,19 @@ namespace Blake3Core
 
             ReadOnlyMemory<byte> ProcessChunkRun(ReadOnlyMemory<byte> data, int chunkCount)
             {
-                for (int i = 0; i < chunkCount; i++)
-                {
-                    var cv = _chunkState.CompressChunk(data.Span.Slice(0, Blake3.ChunkLength));
-                    data = data.Slice(Blake3.ChunkLength);
-                    AddChunkChainingValue(cv);
-                    _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
-                }
-                return data;
+                var cvs = new ChainingValue[chunkCount];
+
+                Parallel.For(0, chunkCount, (i, state) =>
+                            {
+                                var chunkState = new ChunkState(_cv, _chunkState.ChunkCount + (ulong)i, DefaultFlag);
+                                cvs[i] = chunkState.CompressChunk(data.Slice(i * Blake3.ChunkLength, Blake3.ChunkLength).Span);
+                            });
+
+                for(int i = 0; i < chunkCount; i++)
+                    AddChunkChainingValue(cvs[i], _chunkState.ChunkCount + 1 + (ulong)i);
+
+                _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + (ulong)chunkCount, DefaultFlag);
+                return data.Slice(chunkCount * Blake3.ChunkLength);
             }
         }
 
