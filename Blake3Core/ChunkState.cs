@@ -72,5 +72,33 @@ namespace Blake3Core
             data.Slice(0, available).CopyTo(_block.AsSpan().Slice(_blockLength));
             _blockLength += available;
         }
+
+        public ChainingValue CompressChunk(ReadOnlySpan<byte> data)
+        {
+            Debug.Assert(data.Length == Blake3.ChunkLength);
+
+            var state = new State(cv: _cv,
+                                  counter: ChunkCount,
+                                  flag: _defaultFlag | Flag.ChunkStart);
+            state.Compress(data.AsLittleEndianUints());
+
+            data = data.Slice(Blake3.BlockLength);
+
+            while (data.Length > Blake3.BlockLength)
+            {
+                state = new State(cv: state.cv,
+                                  counter: ChunkCount,
+                                  flag: _defaultFlag);
+                state.Compress(data.AsLittleEndianUints());
+
+                data = data.Slice(Blake3.BlockLength);
+            }
+
+            state = new State(cv: state.cv,
+                              counter: ChunkCount,
+                              flag: _defaultFlag | Flag.ChunkEnd);
+            state.Compress(data.AsLittleEndianUints());
+            return state.cv;
+        }
     }
 }

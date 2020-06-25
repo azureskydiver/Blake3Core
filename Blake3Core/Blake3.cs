@@ -153,9 +153,9 @@ namespace Blake3Core
             {
                 for (int i = 0; i < chunkCount; i++)
                 {
-                    _chunkState.Update(data.Span.Slice(0, Blake3.ChunkLength));
+                    var cv = _chunkState.CompressChunk(data.Span.Slice(0, Blake3.ChunkLength));
                     data = data.Slice(Blake3.ChunkLength);
-                    AddChunkChainingValue(_chunkState.Output.ChainingValue);
+                    AddChunkChainingValue(cv);
                     _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
                 }
                 return data;
