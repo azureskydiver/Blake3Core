@@ -1,9 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Threading.Tasks;
+using System.Threading.Tasks.Sources;
 
 namespace Blake3Core
 {
@@ -68,23 +72,16 @@ namespace Blake3Core
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {
-            var data = new ReadOnlySpan<byte>(array, ibStart, cbSize);
-            if (data.IsEmpty)
-                return;
-
             _output = null;
             if (_chunkState == null)
                 Initialize();
 
-            if (_chunkState.IsComplete)
-            {
-                AddChunkChainingValue(_chunkState.Output.ChainingValue);
-                _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
-            }
-            else
-            {
-                data = FillIncompletePreviousChunk(data);
-            }
+            var data = new ReadOnlyMemory<byte>(array, ibStart, cbSize);
+            if (data.IsEmpty)
+                return;
+
+            data = FillIncompletePreviousChunk(data);
+            data = ProcessChunkRuns(data);
 
             while (!data.IsEmpty)
             {
@@ -95,7 +92,7 @@ namespace Blake3Core
                 }
 
                 var available = Math.Min(_chunkState.Needed, data.Length);
-                _chunkState.Update(data.Slice(0, available));
+                _chunkState.Update(data.Span.Slice(0, available));
                 data = data.Slice(available);
             }
 
@@ -110,13 +107,19 @@ namespace Blake3Core
                 _chainingValueStack.Push(cv);
             }
 
-            ReadOnlySpan<byte> FillIncompletePreviousChunk(ReadOnlySpan<byte> data)
+            ReadOnlyMemory<byte> FillIncompletePreviousChunk(ReadOnlyMemory<byte> data)
             {
+                if (_chunkState.IsComplete)
+                {
+                    AddChunkChainingValue(_chunkState.Output.ChainingValue);
+                    _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
+                }
+
                 if (_chunkState.Needed == Blake3.ChunkLength)
                     return data;
 
                 var available = Math.Min(_chunkState.Needed, data.Length);
-                _chunkState.Update(data.Slice(0, available));
+                _chunkState.Update(data.Span.Slice(0, available));
                 data = data.Slice(available);
 
                 if (!data.IsEmpty && _chunkState.IsComplete)
@@ -126,6 +129,63 @@ namespace Blake3Core
                 }
                 return data;
             }
+
+            ReadOnlyMemory<byte> ProcessChunkRuns(ReadOnlyMemory<byte> data)
+            {
+                if (data.IsEmpty)
+                    return data;
+
+                while (data.Length > 2 * Blake3.ChunkLength)
+                {
+                    var chunkCount = data.Length / Blake3.ChunkLength;
+                    chunkCount = PowerOfTwo(chunkCount);
+                    if (chunkCount * Blake3.ChunkLength == data.Length)
+                        chunkCount /= 2;
+                    if (chunkCount < 2)
+                        break;
+
+                    data = ProcessChunkRun(data, chunkCount);
+                }
+                return data;
+            }
+
+            ReadOnlyMemory<byte> ProcessChunkRun(ReadOnlyMemory<byte> data, int chunkCount)
+            {
+                for (int i = 0; i < chunkCount; i++)
+                {
+                    _chunkState.Update(data.Span.Slice(0, Blake3.ChunkLength));
+                    data = data.Slice(Blake3.ChunkLength);
+                    AddChunkChainingValue(_chunkState.Output.ChainingValue);
+                    _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
+                }
+                return data;
+            }
+        }
+
+        static readonly (uint Mask, int Bits)[] _powerOfTwoBits = new (uint Mask, int Bits)[]
+        {
+            ( 0xFFFF0000, 16 ),
+            ( 0x0000FF00,  8 ),
+            ( 0x000000F0,  4 ),
+            ( 0x0000000C,  2 ),
+            ( 0x00000002,  1 ),
+        };
+
+        static int PowerOfTwo(int value)
+        {
+            if (value == 0)
+                return 0;
+
+            var count = 0;
+            foreach(var (mask, bits) in _powerOfTwoBits)
+            {
+                if (((uint)value & mask) != 0)
+                {
+                    value >>= bits;
+                    count |= bits;
+                }
+            }
+            return 1 << count;
         }
 
         protected override byte[] HashFinal()
