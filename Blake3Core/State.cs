@@ -12,6 +12,7 @@ namespace Blake3Core
         [FieldOffset(0)] public fixed uint s[16];
         [FieldOffset(0)] public ChainingValue cv;
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public State(in ChainingValue cv,
                      ulong counter = 0,
                      int blockLen = Blake3.BlockLength,
@@ -29,6 +30,23 @@ namespace Blake3Core
                 *dst++ = (uint)counter;
                 *dst++ = (uint)(counter >> 32);
                 *dst++ = (uint)blockLen;
+                *dst++ = (uint)flag;
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public void ReuseCv(ulong counter, Flag flag)
+        {
+            fixed (uint* s8 = &s[8])
+            {
+                uint* dst = s8;
+                *dst++ = Blake3.IV0;
+                *dst++ = Blake3.IV1;
+                *dst++ = Blake3.IV2;
+                *dst++ = Blake3.IV3;
+                *dst++ = (uint)counter;
+                *dst++ = (uint)(counter >> 32);
+                *dst++ = (uint)Blake3.BlockLength;
                 *dst++ = (uint)flag;
             }
         }

@@ -86,17 +86,13 @@ namespace Blake3Core
 
             while (data.Length > Blake3.BlockLength)
             {
-                state = new State(cv: state.cv,
-                                  counter: ChunkCount,
-                                  flag: _defaultFlag);
+                state.ReuseCv(counter: ChunkCount, flag: _defaultFlag);
                 state.Compress(data.AsLittleEndianUints());
 
                 data = data.Slice(Blake3.BlockLength);
             }
 
-            state = new State(cv: state.cv,
-                              counter: ChunkCount,
-                              flag: _defaultFlag | Flag.ChunkEnd);
+            state.ReuseCv(counter: ChunkCount, flag: _defaultFlag | Flag.ChunkEnd);
             state.Compress(data.AsLittleEndianUints());
             return state.cv;
         }
