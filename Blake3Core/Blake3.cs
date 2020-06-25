@@ -68,11 +68,24 @@ namespace Blake3Core
 
         protected override void HashCore(byte[] array, int ibStart, int cbSize)
         {
+            var data = new ReadOnlySpan<byte>(array, ibStart, cbSize);
+            if (data.IsEmpty)
+                return;
+
             _output = null;
             if (_chunkState == null)
                 Initialize();
 
-            var data = new ReadOnlySpan<byte>(array, ibStart, cbSize);
+            if (_chunkState.IsComplete)
+            {
+                AddChunkChainingValue(_chunkState.Output.ChainingValue);
+                _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
+            }
+            else
+            {
+                data = FillIncompletePreviousChunk(data);
+            }
+
             while (!data.IsEmpty)
             {
                 if (_chunkState.IsComplete)
@@ -95,6 +108,23 @@ namespace Blake3Core
                     chunkCount >>= 1;
                 }
                 _chainingValueStack.Push(cv);
+            }
+
+            ReadOnlySpan<byte> FillIncompletePreviousChunk(ReadOnlySpan<byte> data)
+            {
+                if (_chunkState.Needed == Blake3.ChunkLength)
+                    return data;
+
+                var available = Math.Min(_chunkState.Needed, data.Length);
+                _chunkState.Update(data.Slice(0, available));
+                data = data.Slice(available);
+
+                if (!data.IsEmpty && _chunkState.IsComplete)
+                {
+                    AddChunkChainingValue(_chunkState.Output.ChainingValue);
+                    _chunkState = new ChunkState(_cv, _chunkState.ChunkCount + 1, DefaultFlag);
+                }
+                return data;
             }
         }
 
