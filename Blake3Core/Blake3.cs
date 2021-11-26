@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
 using System.Security.Cryptography;
 
@@ -9,9 +8,9 @@ namespace Blake3Core
 {
     public class Blake3 : HashAlgorithm
     {
-        const int HashSizeInBits = HashSizeInBytes * 8;
+        internal const int HashSizeInBits = HashSizeInBytes * 8;
 
-        internal const int HashSizeInBytes = 16 * sizeof(uint);
+        internal const int HashSizeInBytes = 8 * sizeof(uint);
         internal const int ChunkLength = 1024;
         internal const int BlockLength = 16 * sizeof(uint);
 
@@ -30,9 +29,15 @@ namespace Blake3Core
         Stack<ChainingValue> _chainingValueStack;
         Output _output;
 
-        protected private Blake3(Flag defaultFlag, ReadOnlySpan<uint> key)
+        protected private Blake3(Flag defaultFlag, ReadOnlySpan<uint> key, int? outputSizeInBits)
         {
-            HashSizeValue = HashSizeInBits;
+            if (outputSizeInBits == null)
+                HashSizeValue = HashSizeInBits;
+            else if (outputSizeInBits.Value < 1)
+                throw new ArgumentException("Output size must be postive integer", nameof(outputSizeInBits));
+            else
+                HashSizeValue = outputSizeInBits.Value;
+
             DefaultFlag = defaultFlag;
 
             if (key.Length != 8)
@@ -40,16 +45,21 @@ namespace Blake3Core
             _cv.Initialize(key.ToArray());
         }
 
-        protected private Blake3(Flag defaultFlag, ReadOnlySpan<byte> key)
-            : this(defaultFlag, key.Length == 32 ? key.AsUints() : new ReadOnlySpan<uint>())
+        protected private Blake3(Flag defaultFlag, ReadOnlySpan<byte> key, int? outputSizeInBits)
+            : this(defaultFlag, key.Length == 32 ? key.AsUints() : new ReadOnlySpan<uint>(), outputSizeInBits)
         {
         }
 
-        protected private static Blake3 Create(Flag defaultFlag, ReadOnlySpan<uint> key)
-            => new Blake3(defaultFlag, key);
+        protected private static Blake3 Create(Flag defaultFlag, ReadOnlySpan<uint> key, int? outputSizeInBits)
+            => new Blake3(defaultFlag, key, outputSizeInBits);
 
         public Blake3()
-            : this(Flag.None, IV)
+            : this(Flag.None, IV, HashSizeInBits)
+        {
+        }
+
+        public Blake3(int hashSizeInBits)
+            : this(Flag.None, IV, hashSizeInBits)
         {
         }
 

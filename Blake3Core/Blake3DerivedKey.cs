@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Runtime.InteropServices;
 using System.Text;
 
 namespace Blake3Core
@@ -8,7 +6,7 @@ namespace Blake3Core
     public class Blake3DerivedKey : Blake3
     {
         public Blake3DerivedKey(byte[] context)
-            : base(Flag.DeriveKeyMaterial, DeriveKey(context))
+            : base(Flag.DeriveKeyMaterial, DeriveKey(context), HashSizeInBits)
         {
         }
 
@@ -27,15 +25,15 @@ namespace Blake3Core
         {
         }
 
-        static byte [] ComputeHash(Flag flag, ReadOnlySpan<uint> key, byte[] message)
+        static byte [] ComputeHash(Flag flag, ReadOnlySpan<uint> key, int outputSizeInBits, byte[] message)
         {
-            using (var hashAlgorithm = Blake3.Create(flag, key))
+            using (var hashAlgorithm = Blake3.Create(flag, key, outputSizeInBits))
                 return hashAlgorithm.ComputeHash(message);
         }
 
         static byte[] DeriveKey(byte[] context)
         {
-            var keyContext = ComputeHash(Flag.DeriveKeyContext, IV, context);
+            var keyContext = ComputeHash(Flag.DeriveKeyContext, IV, HashSizeInBits, context);
             return keyContext.AsSpan().Slice(0, 8 * sizeof(uint)).ToArray();
         }
     }
