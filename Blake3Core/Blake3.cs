@@ -53,12 +53,7 @@ namespace Blake3Core
         protected private static Blake3 Create(Flag defaultFlag, ReadOnlySpan<uint> key, int? outputSizeInBits)
             => new Blake3(defaultFlag, key, outputSizeInBits);
 
-        public Blake3()
-            : this(Flag.None, IV, HashSizeInBits)
-        {
-        }
-
-        public Blake3(int hashSizeInBits)
+        public Blake3(int hashSizeInBits = HashSizeInBits)
             : this(Flag.None, IV, hashSizeInBits)
         {
         }

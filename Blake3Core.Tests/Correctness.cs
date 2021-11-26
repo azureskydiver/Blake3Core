@@ -9,7 +9,7 @@ namespace Blake3Core.Tests
     public class Correctness
     {
         static Dictionary<int, IEnumerable<byte>> _inputBytes = new Dictionary<int, IEnumerable<byte>>();
-        private const int _defaultOutputByteSize = 32;
+        const int _defaultOutputByteSize = 32;
 
         static IEnumerable<byte> GetInputBytes(int length)
         {
