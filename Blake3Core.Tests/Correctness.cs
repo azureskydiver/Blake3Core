@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection.Metadata.Ecma335;
 using System.Text;
 using Xunit;
 
@@ -10,6 +9,7 @@ namespace Blake3Core.Tests
     public class Correctness
     {
         static Dictionary<int, IEnumerable<byte>> _inputBytes = new Dictionary<int, IEnumerable<byte>>();
+        const int _defaultOutputByteSize = 32;
 
         static IEnumerable<byte> GetInputBytes(int length)
         {
@@ -20,11 +20,16 @@ namespace Blake3Core.Tests
 
         void VerifyAllAtOnce(Func<Blake3> create, int inputLength, string expectedHash)
         {
+            VerifyAllAtOnce(create, inputLength, expectedHash, _defaultOutputByteSize);
+        }
+
+        void VerifyAllAtOnce(Func<Blake3> create, int inputLength, string expectedHash, int byteOutputSize)
+        {
             var hasher = create();
             var input = GetInputBytes(inputLength).ToArray();
             var hash = hasher.ComputeHash(input);
 
-            Assert.Equal(64, hash.Length);
+            Assert.Equal(byteOutputSize, hash.Length);
             Assert.Equal(expectedHash, hasher.GetExtendedOutput()
                                              .Take(expectedHash.Length / 2)
                                              .ToArray()
@@ -39,7 +44,7 @@ namespace Blake3Core.Tests
                 hasher.TransformBlock(input, i, 1, null, 0);
             hasher.TransformFinalBlock(input, 0, 0);
 
-            Assert.Equal(64, hasher.Hash.Length);
+            Assert.Equal(_defaultOutputByteSize, hasher.Hash.Length);
             Assert.Equal(expectedHash, hasher.GetExtendedOutput()
                                              .Take(expectedHash.Length / 2)
                                              .ToArray()
@@ -53,6 +58,18 @@ namespace Blake3Core.Tests
             VerifyAllAtOnce(() => new Blake3(),
                             testVector.InputLength,
                             testVector.Hash);
+        }
+
+        [Theory]
+        [ClassData(typeof(TestVectors))]
+        void VerifyHash512b(TestVector testVector)
+        {
+            var bitLength = 512;
+
+            VerifyAllAtOnce(() => new Blake3(bitLength),
+                            testVector.InputLength,
+                            testVector.Hash,
+                            bitLength / 8);
         }
 
         [Theory]
